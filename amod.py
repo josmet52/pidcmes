@@ -13,14 +13,16 @@ from lib.amod_lib import Amod
 
 amod = Amod()
 
-n_passe = 1000
-n_moy = 2000
-t_discharge = 0.15E-3
+n_passe = 5000
+n_moy = 200
+# t_discharge = 0.05E-3
+
 
 val = []
 n = 0
 
-str_title = "AMOD : moy=" + str(n_moy) + " pass=" + str(n_passe) + " t_discharge=" + str(t_discharge * 1E3) + " ms"
+str_title = "AMOD : moy=" + str(n_moy) + " pass=" + str(n_passe) + " R1=" + str(int(amod.R1/1E3)) + "k C1=" + str(int(amod.C1*1E9)) + "nF"
+print("mesure démarrée")
 amod.get_tension(n_moy)
 while n < n_passe:
     n += 1
@@ -31,6 +33,37 @@ while n < n_passe:
 
 GPIO.cleanup()
 
+# i = 0
+# prt_str = ""
+# hist, bin_edges = np.histogram(val)
+# for edge in bin_edges:
+#     if i < len(hist):
+#         prt_str += "  -" + str(edge) + " - " + str(hist[i])
+#     else:
+#         prt_str += "  -" + str(edge) + " - " 
+#     i += 1
+# print(prt_str)
+#     
+# print(max(hist),hist)
+# print(bin_edges)
+# 
+# valid_data_index = []
+# for i, v in enumerate(hist):
+#     if v >= max(hist)/100:
+#         valid_data_index.append(i)
+# print(valid_data_index)
+# val_min = bin_edges[valid_data_index[0]]
+# val_max = bin_edges[valid_data_index[-1]]
+# 
+# 
+# filtred_data = []
+# for v in val:
+#     if v > val_min and v < val_max:
+#         filtred_data.append(v)
+    
+    
+    
+    
 # An "interface" to matplotlib.axes.Axes.hist() method
 n, bins, patches = plt.hist(x=val, bins='auto', color='#0504aa', alpha=0.7, rwidth=0.85)
 plt.grid(axis='y', alpha=0.75)

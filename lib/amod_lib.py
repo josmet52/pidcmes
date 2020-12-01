@@ -14,7 +14,7 @@ from lib.time_mesure_lib import Exec_time_mesurment
 
 class Amod:
     
-    def __init__(self):
+    def __init__(self, from_who = ""):
         
         # version infos
         VERSION_NO = "0.01.01" 
@@ -23,22 +23,24 @@ class Amod:
         VERSION_STATUS = "initial version"
         VERSION_AUTEUR = "josmet"
 
-        self.pin_cmd = 18 # pin de commande
-        self.pin_mes = 16 # pin de mesure
+        self.pin_cmd = 38 # pin de commande
+        self.pin_mes = 36 # pin de mesure
   
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
         GPIO.setup(self.pin_cmd, GPIO.OUT)  # la pin 23 est une sortie numérique                  
         GPIO.setup(self.pin_mes, GPIO.IN)  # la pin 25 est une entrée numérique
 
-        self.t_discharge = 0.15E-3 # donner un bref instant pour assurer la déchrge du condensateur
+        self.t_discharge = 0.05E-3 # donner un bref instant pour assurer la déchrge du condensateur
+        self.mesure_offset = 0E-3
 
-        with open('amod.ini', 'r') as ini_file:
-            data = ini_file.readlines()
-            params = data[0].split(",")
-            self.u_in_trig = float(params[0])
-            self.R1 = float(params[1])
-            self.C1 = float(params[2])
+        if from_who != "etalonnage":
+            with open('amod.ini', 'r') as ini_file:
+                data = ini_file.readlines()
+                params = data[0].split(",")
+                self.u_in_trig = float(params[0])
+                self.R1 = float(params[1])
+                self.C1 = float(params[2])
         
     def get_tension(self, n_moyenne):
 
@@ -59,7 +61,8 @@ class Amod:
             i += 1
             
         t_elapsed = t_elapsed_average / n_moyenne
-        u_average = self.u_in_trig / (1 - math.exp(-t_elapsed / (self.R1 * self.C1)))
+#         u_average = self.mesure_offset + ((self.u_in_trig - self.mesure_offset) / (1 - math.exp(-t_elapsed / (self.R1 * self.C1))))
+        u_average = self.u_in_trig / (1 - math.exp(-t_elapsed / (self.R1 * self.C1))) - self.mesure_offset
         
         return u_average
         
@@ -82,6 +85,7 @@ class Amod:
             i += 1
             
         t_elapsed = t_elapsed_average / n_moyenne
+#         u_trig_calc = self.mesure_offset + ((u_in - self.mesure_offset) * (1 - math.exp(-t_elapsed / (R1 * C1))))
         u_trig_calc = u_in * (1 - math.exp(-t_elapsed / (R1 * C1)))
 
         with open('amod.ini', 'w') as ini_file:
