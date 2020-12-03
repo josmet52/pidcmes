@@ -11,6 +11,6 @@ import matplotlib.pyplot as plt
 from lib.amod_lib import Amod
 
 amod = Amod("etalonnage")
-u_trig = amod.set_param(u_in=3.92, R1=100E3, C1=100E-9, n_moyenne=500)
+u_trig = amod.set_param(u_in=4.082, R1=100E3, C1=100E-9, n_moyenne=500)
 print("u_trig = " + str(u_trig))
 

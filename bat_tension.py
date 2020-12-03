@@ -39,7 +39,7 @@ while True:
     sql_txt = " ".join(["INSERT INTO tlog (mes_value) VALUES (", str(u_avg), ")"])
     mysql_amod.execute_sql(sql_txt)
     
-    str_2_print = str(i) + " -> " + '{:.1f}'.format(u_avg) + " - " + dt.datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
+    str_2_print = str(i) + " -> " + '{:.2f}'.format(u_avg) + " - " + dt.datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
     print(str_2_print)
     
     if u_avg < 3.6:
