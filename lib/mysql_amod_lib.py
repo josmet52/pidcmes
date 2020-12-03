@@ -97,6 +97,15 @@ class Mysql_amod:
         db_connection.close()
         return row
         
+    def get_data(self, sql_txt):
+        db_connection, err = self.get_db_connection()
+        db_cursor = db_connection.cursor()
+        db_cursor.execute(sql_txt)
+        row = db_cursor.fetchall()
+        db_cursor.close()
+        db_connection.close()
+        return row
+        
 
 
 if __name__ == '__main__':

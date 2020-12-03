@@ -20,12 +20,14 @@ mysql_amod.execute_sql(sql_txt)
 
 amod = Amod()
 
-n_moy = 20
+n_moy = 200
 i = 0
-t_sleep = 60
+t_sleep = 10
+stop_run = False
 
 print("mesure démarrée")
-while True:
+
+while not stop_run:
     u_avg = 0
     i += 1
     n = 0
@@ -42,11 +44,19 @@ while True:
     str_2_print = str(i) + " -> " + '{:.2f}'.format(u_avg) + " - " + dt.datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
     print(str_2_print)
     
-    if u_avg < 3.6:
-        print("proper shut down of the machine due to low battery")
+    if u_avg > 4 : #< 3.6:
+        
+        # graph the data's
+        amod.plot_data()
+        # stop the mesure
         GPIO.cleanup()
-        call("sudo shutdown -h now", shell=True)
+        stop_run = True
+        # shut down the RASPI
+        print("proper shut down of the machine due to low battery")
+#         call("sudo shutdown -h now", shell=True)
         
     time.sleep(t_sleep)
+#     if i >= 10:
+#         stop_run = True
     
 GPIO.cleanup()

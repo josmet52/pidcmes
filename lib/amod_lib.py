@@ -6,11 +6,12 @@
 import time
 import RPi.GPIO as GPIO
 import math
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 # import numpy as np
-# import matplotlib.pyplot as plt
 
 from lib.time_mesure_lib import Exec_time_mesurment
-# from lib.mysql_amod_lib import Mysql_amod
+from lib.mysql_amod_lib import Mysql_amod
 
 class Amod:
     
@@ -22,6 +23,8 @@ class Amod:
         VERSION_DESCRIPTION = "prototype"
         VERSION_STATUS = "initial version"
         VERSION_AUTEUR = "josmet"
+        
+        self.mysql_amod = Mysql_amod("192.168.1.139")
 
         self.pin_cmd = 38 # pin de commande
         self.pin_mes = 36 # pin de mesure
@@ -93,74 +96,39 @@ class Amod:
 
         return u_trig_calc
     
-#     def set_param(self, u_in, R1, C1, n_moy):
-# 
-#         GPIO.output(self.pin_cmd, GPIO.HIGH)
-# 
-#         i = 1
-#         u_avg = 0
-#         
-#         while i <= n_moy:
-#             
-#             time.sleep(self.t_discharge) # pour décharger le condo
-#             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
-#             
-#             with Exec_time_mesurment() as etm:  
-#                 while GPIO.input(self.pin_mes) == GPIO.LOW:
-#                     pass
-#             t_elapsed = etm.interval  
-#             
-#             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-#             
-# #             u_trig_calc = self.u_sat_mosfet + ((u_in - self.u_sat_mosfet) * (1 - math.exp(-t_elapsed / (R1 * C1))))
-#             u_trig_calc = u_in * (1 - math.exp(-t_elapsed / (R1 * C1)))
-#             u_avg += u_trig_calc   
-#             i += 1
-#             
-#         u_avg = u_avg / n_moy
-# 
-#         with open('amod.ini', 'w') as ini_file:
-#             ini_file.writelines(str(u_avg) + "," + str(R1) + "," + str(C1))
-# 
-#         return u_avg
-#     
-#         
-#     def get_tension_old(self, n_moyenne):
-# 
-#         GPIO.output(self.pin_cmd, GPIO.HIGH)
-# 
-#         i = 1
-#         u_average = 0
-#         
-#         while i <= n_moyenne:
-#             
-#             time.sleep(self.t_discharge) # pour décharger le condo
-#             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
-#             
-#             with Exec_time_mesurment() as etm:  
-#                 while GPIO.input(self.pin_mes) == GPIO.LOW:
-#                     pass
-#             t_elapsed = etm.interval  
-#             
-#             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-#             
-# #             u_mesure = self.u_sat_mosfet + ((self.u_in_trig - self.u_sat_mosfet) / (1 - math.exp(-t_elapsed / (self.R1 * self.C1))))
-#             u_average += self.u_in_trig / (1 - math.exp(-t_elapsed / (self.R1 * self.C1)))
-# #             u_average += u_mesure  
-#             i += 1
-#             
-#         u_average = u_average / n_moyenne
-#         
-#         return u_average
+    def plot_data(self):    
 
-# if __name__ == '__main__':
-# 
-#     # etalonne le montage avec le RPI
-#     amod = Amod()
-#     u_trig = amod.set_param(5, 100E3, 10E-9, 100)
-#     print("u_trig = " + str(u_trig))
-#     # vérifie la mesure
-#     amod = Amod()
-#     u_mes = amod.get_tension(100)
-#     print("u_mes = " + str(u_mes))
-    
+        sql_txt = "SELECT time_stamp, mes_value FROM tlog;"
+        data = self.mysql_amod.get_data(sql_txt)
+
+        mes_time = []
+        mes_tension = []
+
+        for row in data:
+            mes_time.append(row[0])
+            mes_tension.append(row[1])
+
+        # Convert datetime.datetime to float days since 0001-01-01 UTC.
+        dates = [mdates.date2num(t) for t in mes_time]
+
+        fig = plt.figure()
+        ax1 = fig.add_subplot(111)
+        ax1.set_title("first plot test")
+
+        # Configure x-ticks
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M'))
+
+        # Plot temperature data on left Y axis
+        ax1.set_ylabel("Tension [V]")
+        ax1.plot_date(dates, mes_tension, '-', label="Tension accu", color='b')
+        # ax1.plot_date(dates, mes_time, '-', label="Feels like", color='b')
+
+        # Format the x-axis for dates (label formatting, rotation)
+        fig.autofmt_xdate(rotation=60)
+        fig.tight_layout()
+
+        # Show grids and legends
+        ax1.grid(True)
+        ax1.legend(loc='best', framealpha=0.5)
+        plt.show()
+        plt.savefig("figure.png")

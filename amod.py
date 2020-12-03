@@ -27,7 +27,7 @@ amod.get_tension(n_moy)
 while n < n_passe:
     n += 1
     u_avg = amod.get_tension(n_moy)
-    str_2_print = str(n) + " -> " + '{:.1f}'.format(u_avg)  
+    str_2_print = str(n) + " -> " + '{:.2f}'.format(u_avg)  
     print(str_2_print)
     val.append(u_avg)
 
