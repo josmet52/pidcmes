@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 # -*-
 """
-    class Amod to read analog tension on two digital pins
+    class Amod to
+    - read analog tension on two digital pins
+    - calibrate the sensor
+    - plot the measured data's
 """
 import time
 import RPi.GPIO as GPIO
@@ -24,26 +27,25 @@ class Amod:
         VERSION_STATUS = "initial version"
         VERSION_AUTEUR = "josmet"
         
-        self.mysql_amod = Mysql_amod("192.168.1.139")
+        self.mysql_amod = Mysql_amod("192.168.1.139") # initilize mysql class with IP of the mysql server
 
-        self.pin_cmd = 38 # pin de commande
-        self.pin_mes = 36 # pin de mesure
+        self.pin_cmd = 38 # control pin
+        self.pin_mes = 36 # measure pin
   
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
-        GPIO.setup(self.pin_cmd, GPIO.OUT)  # la pin 23 est une sortie numérique                  
-        GPIO.setup(self.pin_mes, GPIO.IN)  # la pin 25 est une entrée numérique
+        GPIO.setup(self.pin_cmd, GPIO.OUT)  # initialize control pin                  
+        GPIO.setup(self.pin_mes, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
 
-        self.t_discharge = 0.05E-3 # donner un bref instant pour assurer la déchrge du condensateur
-        self.mesure_offset = 0E-3
+        self.t_discharge = 0.05E-3 # time to discharge the capacitor
 
-        if from_who != "etalonnage":
+        if from_who != "calibration": # if not in calibration read the ini data 
             with open('amod.ini', 'r') as ini_file:
                 data = ini_file.readlines()
                 params = data[0].split(",")
-                self.u_in_trig = float(params[0])
-                self.R1 = float(params[1])
-                self.C1 = float(params[2])
+                self.u_in_trig = float(params[0]) # the input trigger level (depend on the harware)
+                self.R1 = float(params[1]) # value of the resistor
+                self.C1 = float(params[2]) # value of the capacitor
         
     def get_tension(self, n_moyenne):
 

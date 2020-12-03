@@ -60,24 +60,6 @@ class Mysql_amod:
         except:
             # return error
             return False, sys.exc_info()
-# 
-#     def add_record(self, value_to_record):
-#         db_connection, err = self.get_db_connection()
-#         db_cursor = db_connection.cursor()
-#         sql_txt = " ".join(["INSERT INTO tlog (mes_value) VALUES (", str(value_to_record), ")"])
-#         db_cursor.execute(sql_txt)
-#         db_connection.commit()
-#         db_cursor.close()
-#         db_connection.close()
-# 
-#     def delete_all_records(self):
-#         db_connection, err = self.get_db_connection()
-#         db_cursor = db_connection.cursor()
-#         sql_txt = "DELETE FROM tlog;"
-#         db_cursor.execute(sql_txt)
-#         db_connection.commit()
-#         db_cursor.close()
-#         db_connection.close()
 
     def execute_sql(self, sql_txt):
         db_connection, err = self.get_db_connection()
