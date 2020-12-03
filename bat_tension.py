@@ -3,11 +3,11 @@
 
 import time
 import datetime as dt
-import RPi.GPIO as GPIO
-import pigpio
-import math
-import numpy as np
-import matplotlib.pyplot as plt
+# import RPi.GPIO as GPIO
+# import pigpio
+# import math
+# import numpy as np
+# import matplotlib.pyplot as plt
 
 from subprocess import call
 from lib.time_mesure_lib import Exec_time_mesurment
@@ -22,7 +22,7 @@ amod = Amod()
 
 n_moy = 200
 i = 0
-t_sleep = 10
+t_sleep = 60
 stop_run = False
 
 print("mesure démarrée")
@@ -30,21 +30,16 @@ print("mesure démarrée")
 while not stop_run:
     u_avg = 0
     i += 1
-    n = 0
     
-    while n < n_moy:
-        u_avg += amod.get_tension(n_moy)
-        n += 1
-        
-    u_avg = u_avg / n_moy
+    u_avg += amod.get_tension(n_moy)
     
     sql_txt = " ".join(["INSERT INTO tlog (mes_value) VALUES (", str(u_avg), ")"])
     mysql_amod.execute_sql(sql_txt)
     
-    str_2_print = str(i) + " -> " + '{:.2f}'.format(u_avg) + " - " + dt.datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
+    str_2_print = str(i) + " -> " + '{:.2f}'.format(u_avg) + " - " + dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
     print(str_2_print)
     
-    if u_avg > 4 : #< 3.6:
+    if u_avg < 3 :
         
         # graph the data's
         amod.plot_data()

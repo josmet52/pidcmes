@@ -62,6 +62,7 @@ class Amod:
             t_elapsed_average += etm.interval  
             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
             i += 1
+#             print(i, etm.interval)
             
         t_elapsed = t_elapsed_average / n_moyenne
 #         u_average = self.mesure_offset + ((self.u_in_trig - self.mesure_offset) / (1 - math.exp(-t_elapsed / (self.R1 * self.C1))))
