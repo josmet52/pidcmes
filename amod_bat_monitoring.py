@@ -16,7 +16,7 @@ mysql_amod.execute_sql(sql_txt)
 
 amod = Amod() # initialize amode class
 
-u_bat_min = 3 # minumum battery voltage 
+u_bat_min = 3.3 # minumum battery voltage 
 n_moy = 200 # averaging to reduce glitches
 t_sleep = 60 # sleep time between two mesurements
 i = 0 # to count the passes
