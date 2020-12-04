@@ -14,7 +14,7 @@ from lib.amod_lib import Amod
 amod = Amod()
 
 n_passe = 5000
-n_moy = 200
+n_moy = 500
 # t_discharge = 0.05E-3
 
 
