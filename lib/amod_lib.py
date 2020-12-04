@@ -68,7 +68,7 @@ class Amod:
             
         t_elapsed = t_elapsed_average / n_moyenne
 #         u_average = self.mesure_offset + ((self.u_in_trig - self.mesure_offset) / (1 - math.exp(-t_elapsed / (self.R1 * self.C1))))
-        u_average = self.u_in_trig / (1 - math.exp(-t_elapsed / (self.R1 * self.C1))) - self.mesure_offset
+        u_average = self.u_in_trig / (1 - math.exp(-t_elapsed / (self.R1 * self.C1))) #- self.mesure_offset
         
         return u_average
         
@@ -133,5 +133,5 @@ class Amod:
         # Show grids and legends
         ax1.grid(True)
         ax1.legend(loc='best', framealpha=0.5)
-        plt.show()
         plt.savefig("figure.png")
+        plt.show()
