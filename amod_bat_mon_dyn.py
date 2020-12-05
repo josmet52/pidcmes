@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
     u_bat_min = 3 # minumum battery voltage 
     n_moy = 500 # averaging to reduce glitches
-    t_sleep = 0.60 # sleep time between two mesurements
+    t_sleep = 60 # sleep time between two mesurements
     i = 0 # to count the passes
     stop_run = False # to control the execution (run/stop)
     
