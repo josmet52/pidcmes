@@ -119,8 +119,56 @@ class Amod:
 
         GPIO.output(self.pin_cmd, GPIO.HIGH)
 
+#         i = 0
+#         t_elapsed_average = 0
+#         
+#         while i < n_moyenne:
+#             
+#             time.sleep(self.t_discharge) # pour décharger le condo
+#             self.stop_requierd = False
+#             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
+#             self.t_charge_start = time.time()
+#             while not self.stop_requierd:
+#                 pass
+#             t_elapsed_average += (self.t_charge_stop - self.t_charge_start)
+#             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
+#             i += 1
+#             
+#         t_elapsed = t_elapsed_average / n_moyenne
+# #         u_trig_calc = self.mesure_offset + ((u_in - self.mesure_offset) * (1 - math.exp(-t_elapsed / (R1 * C1))))
+
         i = 0
+        j = 0
+        n_ref = 100
+        v_ref = 0.0
+        l_ref = []
+        v_tol = 0.05
         t_elapsed_average = 0
+        
+        while j < n_ref:
+            time.sleep(self.t_discharge) # pour décharger le condo
+            self.stop_requierd = False
+            GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
+            self.t_charge_start = time.time()
+            while not self.stop_requierd:
+                pass
+            l_ref.append(self.t_charge_stop - self.t_charge_start)
+            GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
+            j += 1
+         
+#         pdb.set_trace()
+        
+        v_ref = sum(l_ref) / len(l_ref)
+        print("before filterint: len v_ref = " + str(len(l_ref))+ " ms elapsed = " + '{:.2f}'.format(v_ref * 1000) + " ms")
+        for j, v in enumerate(l_ref):
+            if (v < v_ref * (1 - v_tol)) or (v > v_ref * (1 + v_tol)):
+                print("v_ref = " + '{:.4f}'.format(v_ref) + " removed = " + '{:.4f}'.format(l_ref[j]) \
+                               + " delta % = " + '{:.2f}'.format((l_ref[j] - v_ref) / v_ref * 100)) # \
+#                                + " tension = " + '{:.2f}'.format(self.u_in_trig / (1 - math.exp(-v / (self.R1 * self.C1)))))
+                del l_ref[j]
+                
+        v_ref = sum(l_ref) / len(l_ref)
+        print("after filterint: len v_ref = " + str(len(l_ref))+ " ms elapsed = " + '{:.2f}'.format(v_ref * 1000) + " ms")
         
         while i < n_moyenne:
             
@@ -130,12 +178,13 @@ class Amod:
             self.t_charge_start = time.time()
             while not self.stop_requierd:
                 pass
-            t_elapsed_average += (self.t_charge_stop - self.t_charge_start)
+            v = self.t_charge_stop - self.t_charge_start
             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-            i += 1
+            if (v > v_ref * (1 - v_tol)) and (v < v_ref * (1 + v_tol)):
+                t_elapsed_average += v
+                i += 1
             
         t_elapsed = t_elapsed_average / n_moyenne
-#         u_trig_calc = self.mesure_offset + ((u_in - self.mesure_offset) * (1 - math.exp(-t_elapsed / (R1 * C1))))
         u_trig_calc = u_in * (1 - math.exp(-t_elapsed / (R1 * C1)))
 
         with open('amod.ini', 'w') as ini_file:

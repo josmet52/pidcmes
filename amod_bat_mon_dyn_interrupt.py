@@ -113,7 +113,7 @@ if __name__ == '__main__':
         bat_mon_dyn.add_point(xdata, ydata)
 
         print()
-        str_2_print = str(i) + " -> " + '{:.2f}'.format(u_avg) + " - " + dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+        str_2_print = str(i) + " -> " + '{:.3f}'.format(u_avg) + " - " + dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
         print(str_2_print)
         
         if u_avg < u_bat_min:# or i > 10: 
