@@ -8,9 +8,9 @@
 import matplotlib.pyplot as plt
 
 # from lib.time_mesure_lib import Exec_time_mesurment
-from lib.amod_lib import Amod
+from lib.amod_interrupt_lib import Amod
 
 amod = Amod("calibration")
-u_trig = amod.set_param(u_in=4.262, R1=100E3, C1=100E-9, n_moyenne=500)
+u_trig = amod.set_param(u_in=3.176, R1=100E3, C1=100E-9, n_moyenne=500)
 print("u_trig = " + str(u_trig))
 
