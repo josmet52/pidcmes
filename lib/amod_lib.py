@@ -38,7 +38,7 @@ class Amod:
         GPIO.setup(self.pin_cmd, GPIO.OUT)  # initialize control pin                  
         GPIO.setup(self.pin_mes, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
 
-        self.t_discharge = 0.05E-3 # time to discharge the capacitor
+        self.t_discharge = 0.5E-3 # time to discharge the capacitor
 
         if from_who != "calibration": # if not in calibration read the ini data 
             with open('amod.ini', 'r') as ini_file:
