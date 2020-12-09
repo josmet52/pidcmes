@@ -55,6 +55,7 @@ class Amod:
                 self.u_in_trig = float(params[0]) # the input trigger level (depend on the harware)
                 self.R1 = float(params[1]) # value of the resistor
                 self.C1 = float(params[2]) # value of the capacitor
+                self.rep_int_time = float(params[3]) # interrupt respons time
         
     def get_tension(self, n_moyenne):
 
@@ -133,27 +134,9 @@ class Amod:
         self.stop_requierd = True
         
 
-    def set_param(self, u_in, R1, C1, n_moyenne):
+    def set_param(self, u_in, R1, C1, n_moyenne, int_resp_time):
 
         GPIO.output(self.pin_cmd, GPIO.HIGH)
-
-#         i = 0
-#         t_elapsed_average = 0
-#         
-#         while i < n_moyenne:
-#             
-#             time.sleep(self.t_discharge) # pour décharger le condo
-#             self.stop_requierd = False
-#             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
-#             self.t_charge_start = time.time()
-#             while not self.stop_requierd:
-#                 pass
-#             t_elapsed_average += (self.t_charge_stop - self.t_charge_start)
-#             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-#             i += 1
-#             
-#         t_elapsed = t_elapsed_average / n_moyenne
-# #         u_trig_calc = self.mesure_offset + ((u_in - self.mesure_offset) * (1 - math.exp(-t_elapsed / (R1 * C1))))
 
         i = 0
         j = 0
@@ -207,7 +190,7 @@ class Amod:
         u_trig_calc = u_in * (1 - math.exp(-t_elapsed / (R1 * C1)))
 
         with open('amod.ini', 'w') as ini_file:
-            ini_file.writelines(str(u_trig_calc) + "," + str(R1) + "," + str(C1))
+            ini_file.writelines(str(u_trig_calc) + "," + str(R1) + "," + str(C1) + "," + str(int_resp_time))
 
         return u_trig_calc
     
