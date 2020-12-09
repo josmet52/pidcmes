@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 # from lib.time_mesure_lib import Exec_time_mesurment
 from lib.amod_interrupt_lib import Amod
 R1 = 100E3
-C1 = 100E-9
-n_moyenne = 500
+C1 = 1e-6
+n_moyenne = 20
 
 amod = Amod("calibration")
 print("Quelle est la tension appliquée ?")

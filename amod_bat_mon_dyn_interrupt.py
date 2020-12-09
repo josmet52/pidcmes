@@ -90,8 +90,8 @@ if __name__ == '__main__':
     amod = Amod() # initialize amode class
 
     u_bat_min = 1 # minumum battery voltage 
-    n_moy = 500 # averaging to reduce glitches
-    t_sleep = 10 # sleep time between two mesurements
+    n_moy = 20 # averaging to reduce glitches
+    t_sleep = 2 # sleep time between two mesurements
     i = 0 # to count the passes
     stop_run = False # to control the execution (run/stop)
     
