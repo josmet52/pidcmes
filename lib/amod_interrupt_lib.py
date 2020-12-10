@@ -63,47 +63,53 @@ class Amod:
         
     def get_tension(self, n_moyenne):
 
-        GPIO.output(self.pin_cmd, GPIO.HIGH) # décharger le condensateur
+        len_ok = False
+        while not len_ok:
 
-        j = 0
-        l_ref = []
-        while j < n_moyenne:
+            GPIO.output(self.pin_cmd, GPIO.HIGH) # décharger le condensateur
+
+            j = 0
+            l_ref = []
+            while j < n_moyenne:
+                
+                time.sleep(self.t_discharge) # laisser du temps pour décharger le condo
+                
+                self.stop_requierd = False
+                GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
+                self.t_charge_start = time.time() # déclancher le chrono
+    #TODO: voir s'il ne faut pas inverser les deux opérations ci-dessus
+                
+                while not self.stop_requierd:
+                    if time.time() - self.t_charge_start > self.v_timeout:
+                        stop_requierd = True
+                        print("interruption manquée")
+                elapsed = (self.t_charge_stop - self.t_charge_start) - self.rep_int_time
+                l_ref.append(elapsed)
+                GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
+                j += 1
+                
+            print()
+            # get stats of data list
+            nx, mmx, mx, vx, skx, ktx = stat.describe(l_ref)
+            print("before filtering: samples = " + str(nx) + " tension = " + '{:.3f}'.format(self.u_in_trig / (1 - math.exp(- mx / (self.R1 * self.C1)))))
+            # create pandas dataframe
+            df = pd.DataFrame(l_ref, columns=list('B'))
+            # filtering on 3 standard deviation
+            l_ref_new = df[((df.B - df.B.mean()) / df.B.std()).abs() < 2]
+            # extracting the mean value
+            l_ref_new_mean = l_ref_new.B.mean()
             
-            time.sleep(self.t_discharge) # laisser du temps pour décharger le condo
-            
-            self.stop_requierd = False
-            GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
-            self.t_charge_start = time.time() # déclancher le chrono
-#todo voir s'il ne faut pas inverser les deux opérations ci-dessus
-            
-            while not self.stop_requierd:
-                if time.time() - self.t_charge_start > self.v_timeout:
-                    stop_requierd = True
-                    print("interruption manquée")
-            elapsed = (self.t_charge_stop - self.t_charge_start) - self.rep_int_time
-            l_ref.append(elapsed)
-            GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-            j += 1
-            
-        print()
-        # get stats of data list
-        nx, mmx, mx, vx, skx, ktx = stat.describe(l_ref)
-        print("before scipy: samples = " + str(nx)+ " elapsed = " + '{:.2f}'.format(mx * 1000) + " ms" \
-              + " tension = " + '{:.3f}'.format(self.u_in_trig / (1 - math.exp(- mx / (self.R1 * self.C1)))))
-        # create pandas dataframe
-        df = pd.DataFrame(l_ref, columns=list('B'))
-        # filtering on 3 standard deviation
-        l_ref_new = df[((df.B - df.B.mean()) / df.B.std()).abs() < 1]
-        # extracting the mean value
-        l_ref_new_mean = l_ref_new.B.mean()
-#         print(l_ref_new.B.mean(), df.B.mean())
-#         print(df.B.mean(), df.B.std())
-#         # after scipy and pandas filterint
-        nx, mmx, mx, vx, skx, ktx = stat.describe(l_ref_new)
-#         
-        print("after scipy:  samples = " + str(nx)+ " elapsed = " + '{:.2f}'.format(l_ref_new_mean * 1000) + " ms" \
-              + " tension = " + '{:.3f}'.format(self.u_in_trig / (1 - math.exp(- l_ref_new_mean / (self.R1 * self.C1)))))
-        print("----")
+            if len(l_ref_new) > 0:
+                len_ok = True
+            else:
+                print("empty list")
+    #         print(l_ref_new.B.mean(), df.B.mean())
+    #         print(df.B.mean(), df.B.std())
+    #         # after scipy and pandas filterint
+            nx, mmx, mx, vx, skx, ktx = stat.describe(l_ref_new)
+    #         
+            print("after filtering:  samples = " + str(nx) + " tension = " + '{:.3f}'.format(self.u_in_trig / (1 - math.exp(- l_ref_new_mean / (self.R1 * self.C1)))))
+            print("----")
 
 #         u_average = self.u_in_trig / (1 - math.exp(- mx[0] / (self.R1 * self.C1)))
         u_average = self.u_in_trig / (1 - math.exp(- l_ref_new_mean / (self.R1 * self.C1)))
