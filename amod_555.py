@@ -11,7 +11,7 @@ import datetime as dt
 from subprocess import call
 
 # from lib.time_mesure_lib import Exec_time_mesurment
-from lib.amod_555_lib import Amod # class for 'amod' procedures
+from amod_555_lib import Amod # class for 'amod' procedures
 from lib.mysql_amod_lib import Mysql_amod # class for 'mysql' procededures
 
 class Bat_mon_dyn:
