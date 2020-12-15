@@ -14,6 +14,8 @@ from subprocess import call
 from amod_555_lib import Amod # class for 'amod' procedures
 from lib.mysql_amod_lib import Mysql_amod # class for 'mysql' procededures
 
+import pdb
+
 class Bat_mon_dyn:
     
     def __init__(self):
@@ -89,7 +91,7 @@ if __name__ == '__main__':
 
     amod = Amod() # initialize amode class
 
-    u_bat_min = 3 # minumum battery voltage 
+    u_bat_min = 3.4 # minumum battery voltage 
     n_moy = 20 # averaging to reduce glitches
     t_sleep = 2 # sleep time between two mesurements
     i = 0 # to count the passes
@@ -100,7 +102,7 @@ if __name__ == '__main__':
 
     print("mesure démarrée")
 
-    while True: #not stop_run:
+    while not stop_run:
         
         i += 1 # count passes
         u_avg = amod.get_tension(n_moy) # read the value in volts
@@ -113,6 +115,8 @@ if __name__ == '__main__':
         bat_mon_dyn.add_point(xdata, ydata)
 
         print(dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " - " + str(i) + " -> " + '{:.3f}'.format(u_avg))
+        
+#         pdb.set_trace()
         
         if u_avg < u_bat_min:# or i > 10: 
             stop_run = True # stop the mesure
