@@ -9,6 +9,9 @@
 import time
 import RPi.GPIO as GPIO
 import math
+import numpy as np
+import scipy.stats as stat
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pdb
@@ -41,11 +44,13 @@ class Amod:
         GPIO.setup(self.pin_mes, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
         GPIO.add_event_detect(self.pin_mes, GPIO.RISING, callback=self.end_charge_reached) 
         
-        self.t_discharge = 1e-3 # time to discharge the capacitor
+        self.t_discharge = 5e-3 # time to discharge the capacitor
         self.t_charge_stop = 0.0
         self.t_charge_start = 0.0
         self.stop_requierd = False
         self.rep_int_time = 5.15e-3
+        self.v_timeout = 1
+        self.v_tol = 2.5 / 100 # 2.5 %
 
         if from_who != "calibration": # if not in calibration read the ini data 
             with open('amod.ini', 'r') as ini_file:
@@ -54,47 +59,73 @@ class Amod:
                 self.u_in_trig = float(params[0]) # the input trigger level (depend on the harware)
                 self.R1 = float(params[1]) # value of the resistor
                 self.C1 = float(params[2]) # value of the capacitor
+                self.rep_int_time = float(params[3]) # interrupt respons time
         
     def get_tension(self, n_moyenne):
 
-        GPIO.output(self.pin_cmd, GPIO.HIGH)
+        # rechercher la valeur moyenne
+        GPIO.output(self.pin_cmd, GPIO.HIGH) # décharger le condensateur
 
-        i = 0
         j = 0
-        n_ref = 500
-        v_ref = 0.0
         l_ref = []
-        v_tol = 0.05
-        t_elapsed_average = 0
-        
-        while j < n_ref:
-            time.sleep(self.t_discharge) # pour décharger le condo
+        while j < n_moyenne:
+            
+            time.sleep(self.t_discharge) # laisser du temps pour décharger le condo
+            
             self.stop_requierd = False
             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
-            self.t_charge_start = time.time()
+            self.t_charge_start = time.time() # déclancher le chrono
+#todo voir s'il ne faut pas inverser les deux opérations ci-dessus
+            
             while not self.stop_requierd:
-#                 if time.time() - self.t_charge_start > 1:
-#                     break
-                pass
+                if time.time() - self.t_charge_start > self.v_timeout:
+                    stop_requierd = True
+                    print("interruption manquée")
             elapsed = (self.t_charge_stop - self.t_charge_start) - self.rep_int_time
             l_ref.append(elapsed)
             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
             j += 1
-         
-#         pdb.set_trace()
+# scipy ===================================================================
+        print()
+        nx, mmx, mx, vx, skx, ktx = stat.describe(l_ref)
+#         print(nx, mmx, mx)
+#         print(stat_des)
+#         print()
         
+        print("before scipy: len v_ref = " + str(nx)+ " elapsed = " + '{:.4f}'.format(mx * 1000) + " ms" \
+              + " tension = " + '{:.3f}'.format(self.u_in_trig / (1 - math.exp(- mx / (self.R1 * self.C1)))))
+        df = pd.DataFrame(l_ref, columns=list('B'))
+        l_ref_new = df[((df.B - df.B.mean()) / df.B.std()).abs() < 3]
+        nx, mmx, mx, vx, skx, ktx = stat.describe(l_ref_new)
+#         print(nx, mmx, mx[0])
+        
+        print("after scipy: len v_ref = " + str(nx)+ " elapsed = " + '{:.4f}'.format(mx[0] * 1000) + " ms" \
+              + " tension = " + '{:.3f}'.format(self.u_in_trig / (1 - math.exp(- mx[0] / (self.R1 * self.C1)))))
+#         l_ref_new = df[((df.B - df.B.mean()) / df.B.std()).abs() < 3]
+#         l_ref_new = l_ref[((l_ref - l_ref.mean()) / l_ref.std()).abs() < 3]
+#         stat_des = stat.describe(l_ref_new)
+#         print(stat_des)
+        print("----")
+
+# scipy ===================================================================
+        
+        v_ref = 0.0
         v_ref = sum(l_ref) / len(l_ref)
-        print("before filtering: len v_ref = " + str(len(l_ref))+ " elapsed = " + '{:.2f}'.format(v_ref * 1000) + " ms")
+        print("before filtering: len v_ref = " + str(len(l_ref))+ " elapsed = " + '{:.4f}'.format(v_ref * 1000) + " ms" \
+              + " tension = " + '{:.3f}'.format(self.u_in_trig / (1 - math.exp(-v_ref / (self.R1 * self.C1)))))
         for j, v in enumerate(l_ref):
-            if (v < v_ref * (1 - v_tol)) or (v > v_ref * (1 + v_tol)):
+            if (v < v_ref * (1 - self.v_tol / 2)) or (v > v_ref * (1 + self.v_tol / 2)):
                 print("v_ref = " + '{:.4f}'.format(v_ref) + " removed = " + '{:.4f}'.format(l_ref[j]) \
                                + " delta % = " + '{:.2f}'.format((l_ref[j] - v_ref) / v_ref * 100) \
                                + " tension = " + '{:.2f}'.format(self.u_in_trig / (1 - math.exp(-v / (self.R1 * self.C1)))))
                 del l_ref[j]
                 
         v_ref = sum(l_ref) / len(l_ref)
-        print("after filtering: len v_ref = " + str(len(l_ref))+ " elapsed = " + '{:.2f}'.format(v_ref * 1000) + " ms")
+        print("after filtering: len v_ref = " + str(len(l_ref))+ " elapsed = " + '{:.4f}'.format(v_ref * 1000) + " ms" \
+              + " tension = " + '{:.3f}'.format(self.u_in_trig / (1 - math.exp(-v_ref / (self.R1 * self.C1)))))
         
+        t_elapsed_average = 0
+        i = 0
         while i < n_moyenne:
             
             time.sleep(self.t_discharge) # pour décharger le condo
@@ -102,12 +133,18 @@ class Amod:
             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
             self.t_charge_start = time.time()
             while not self.stop_requierd:
-                pass
+                if time.time() - self.t_charge_start > self.v_timeout:
+                    stop_requierd = True
+                    print("interruption manquée")
             v = self.t_charge_stop - self.t_charge_start - self.rep_int_time
             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-            if (v > v_ref * (1 - v_tol)) and (v < v_ref * (1 + v_tol)):
+            if (v > v_ref * (1 - self.v_tol)) and (v < v_ref * (1 + self.v_tol)):
                 t_elapsed_average += v
                 i += 1
+            else:
+                print("mesures removed = " + '{:.4f}'.format(v) \
+                               + " delta % = " + '{:.2f}'.format((v - v_ref) / v_ref * 100) \
+                               + " tension = " + '{:.2f}'.format(self.u_in_trig / (1 - math.exp(-v / (self.R1 * self.C1)))))
             
         t_elapsed = t_elapsed_average / n_moyenne
         u_average = self.u_in_trig / (1 - math.exp(-t_elapsed / (self.R1 * self.C1))) #- self.mesure_offset
@@ -119,37 +156,19 @@ class Amod:
         self.stop_requierd = True
         
 
-    def set_param(self, u_in, R1, C1, n_moyenne):
+    def set_param(self, u_in, R1, C1, n_moyenne, int_resp_time):
 
         GPIO.output(self.pin_cmd, GPIO.HIGH)
 
-#         i = 0
-#         t_elapsed_average = 0
-#         
-#         while i < n_moyenne:
-#             
-#             time.sleep(self.t_discharge) # pour décharger le condo
-#             self.stop_requierd = False
-#             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
-#             self.t_charge_start = time.time()
-#             while not self.stop_requierd:
-#                 pass
-#             t_elapsed_average += (self.t_charge_stop - self.t_charge_start)
-#             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-#             i += 1
-#             
-#         t_elapsed = t_elapsed_average / n_moyenne
-# #         u_trig_calc = self.mesure_offset + ((u_in - self.mesure_offset) * (1 - math.exp(-t_elapsed / (R1 * C1))))
-
         i = 0
         j = 0
-        n_ref = 100
+        n_moyenne = 100
         v_ref = 0.0
         l_ref = []
-        v_tol = 0.05
+        v_tol_etalon = self.v_tol * 2
         t_elapsed_average = 0
         
-        while j < n_ref:
+        while j < n_moyenne:
             time.sleep(self.t_discharge) # pour décharger le condo
             self.stop_requierd = False
             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
@@ -166,7 +185,7 @@ class Amod:
         v_ref = sum(l_ref) / len(l_ref)
         print("before filterint: len v_ref = " + str(len(l_ref))+ " elapsed = " + '{:.2f}'.format(v_ref * 1000) + " ms")
         for j, v in enumerate(l_ref):
-            if (v < v_ref * (1 - v_tol)) or (v > v_ref * (1 + v_tol)):
+            if (v < v_ref * (1 - v_tol_etalon)) or (v > v_ref * (1 + v_tol_etalon)):
                 print("v_ref = " + '{:.4f}'.format(v_ref) + " removed = " + '{:.4f}'.format(l_ref[j]) \
                                + " delta % = " + '{:.2f}'.format((l_ref[j] - v_ref) / v_ref * 100)) # \
 #                                + " tension = " + '{:.2f}'.format(self.u_in_trig / (1 - math.exp(-v / (self.R1 * self.C1)))))
@@ -185,7 +204,7 @@ class Amod:
                 pass
             v = self.t_charge_stop - self.t_charge_start - self.rep_int_time
             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-            if (v > v_ref * (1 - v_tol)) and (v < v_ref * (1 + v_tol)):
+            if (v > v_ref * (1 - v_tol_etalon)) and (v < v_ref * (1 + v_tol_etalon)):
                 t_elapsed_average += v
                 i += 1
             
@@ -193,7 +212,7 @@ class Amod:
         u_trig_calc = u_in * (1 - math.exp(-t_elapsed / (R1 * C1)))
 
         with open('amod.ini', 'w') as ini_file:
-            ini_file.writelines(str(u_trig_calc) + "," + str(R1) + "," + str(C1))
+            ini_file.writelines(str(u_trig_calc) + "," + str(R1) + "," + str(C1) + "," + str(int_resp_time))
 
         return u_trig_calc
     

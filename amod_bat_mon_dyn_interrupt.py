@@ -89,9 +89,9 @@ if __name__ == '__main__':
 
     amod = Amod() # initialize amode class
 
-    u_bat_min = 1 # minumum battery voltage 
-    n_moy = 500 # averaging to reduce glitches
-    t_sleep = 10 # sleep time between two mesurements
+    u_bat_min = 3 # minumum battery voltage 
+    n_moy = 100 # averaging to reduce glitches
+    t_sleep = 2 # sleep time between two mesurements
     i = 0 # to count the passes
     stop_run = False # to control the execution (run/stop)
     
@@ -99,6 +99,7 @@ if __name__ == '__main__':
     ydata = []
 
     print("mesure démarrée")
+    print("======================================================================")
 
     while not stop_run:
         
@@ -114,7 +115,7 @@ if __name__ == '__main__':
 
         str_2_print = str(i) + " -> " + '{:.3f}'.format(u_avg) + " - " + dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
         print(str_2_print)
-        print()
+        print("======================================================================")
         
         if u_avg < u_bat_min:# or i > 10: 
             stop_run = True # stop the mesure
