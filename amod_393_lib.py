@@ -34,7 +34,7 @@ class Amod:
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
         GPIO.setup(self.pin_cmd, GPIO.OUT)  # initialize control pin                  
-        GPIO.setup(self.pin_mes, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
+        GPIO.setup(self.pin_mes, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # initialize measure pi (attention no pull-up or pull-down)
         GPIO.add_event_detect(self.pin_mes, GPIO.FALLING, callback=self.interrupt_management) 
         GPIO.output(self.pin_cmd, GPIO.LOW) 
 
@@ -61,7 +61,7 @@ class Amod:
 
 
         if from_who != "calibration": # if not in calibration read the ini data 
-            with open('amod_555.ini', 'r') as ini_file:
+            with open('amod_393.ini', 'r') as ini_file:
                 data = ini_file.readlines()
                 params = data[0].split(",")
                 self.u_in_trig = float(params[0]) # the input trigger level (depend on the harware)
@@ -76,7 +76,7 @@ class Amod:
         j = 0
         l_elapsed = []
         pulse_width = 10e-6
-        t_pause_between_mesures = 10e-3
+        t_pause_between_mesures = 0.5e-3
         t_timeout = 1
         VCEsat = 15e-3
         while j < n_moyenne:
@@ -84,19 +84,20 @@ class Amod:
             time.sleep(t_pause_between_mesures) # laisser du temps pour décharger le condo
             
             self.end_requierd = False
-            GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure (NE555 -> TRIG passe à 0)
-            time.sleep(pulse_width)
             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la mesure (NE555 -> TRIG passe à 0)
+            time.sleep(pulse_width)
+            GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure (NE555 -> TRIG passe à 0)
             self.t_start_mesure = time.time() # déclancher le chrono
             while not self.end_requierd:
                 if time.time() - self.t_start_mesure > t_timeout:
-                    stop_requierd = True
+                    self.end_requierd = True
                     print("interruption manquée")
                     
             elapsed = (self.t_end_mesure - self.t_start_mesure) - self.int_resp_time
             l_elapsed.append(elapsed)
             time.sleep(t_pause_between_mesures)
             j += 1
+#             print(j)
         GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la décharge du condensateur
         
         # get stats of data list
@@ -194,7 +195,8 @@ if __name__ == '__main__':
 
     #verify tension and filtering
     amod = Amod()
-    a = amod.get_tension(50, show_histogram = True)
+    print("amod_393_lib mesure démarre")
+    a = amod.get_tension(200, show_histogram = True)
 #     amod.test_ne555()
     
     GPIO.cleanup()
