@@ -35,8 +35,8 @@ class Amod:
         GPIO.setwarnings(False)
         GPIO.setup(self.pin_cmd, GPIO.OUT)  # initialize control pin                  
         GPIO.setup(self.pin_mes, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
-        GPIO.add_event_detect(self.pin_mes, GPIO.RISING, callback=self.end_charge_reached) 
-        GPIO.output(self.pin_cmd, GPIO.HIGH) 
+        GPIO.add_event_detect(self.pin_mes, GPIO.FALLING, callback=self.interrupt_management) 
+        GPIO.output(self.pin_cmd, GPIO.LOW) 
 
 #         pdb.set_trace()
 #         # test pins cmd and mes 
@@ -47,14 +47,17 @@ class Amod:
 #         print(GPIO.input(self.pin_mes))
         
         
-        self.t_discharge = 250e-6 # time to discharge the capacitor
-        self.t_charge_stop = 0.0
-        self.t_charge_start = 0.0
-        self.stop_requierd = False
-        self.rep_int_time = 5.15e-3
-        self.v_timeout = 1
-        self.v_tol = 2.5 / 100 # 2.5 %
+#         self.t_discharge = 250e-6 # time to discharge the capacitor
+        self.t_end_mesure = 0.0
+        self.t_start_mesure = 0.0
+        self.end_requierd = False
+#         self.int_resp_time = 4.95e-3
+#         self.VCEsat = 10e-3 # pour déduire la tension de saturation du transistor
+#         self.v_timeout = 1
+#         self.v_tol = 2.5 / 100 # 2.5 %
         self.filter = 1.5 # +/- n ecart types gardés
+        self.v_val = []
+        self.n_moy = 50
 
 
         if from_who != "calibration": # if not in calibration read the ini data 
@@ -64,7 +67,7 @@ class Amod:
                 self.u_in_trig = float(params[0]) # the input trigger level (depend on the harware)
                 self.R1 = float(params[1]) # value of the resistor
                 self.C1 = float(params[2]) # value of the capacitor
-                self.rep_int_time = float(params[3]) # interrupt respons time
+                self.int_resp_time = float(params[3]) # interrupt response time
         
     def get_tension(self, n_moyenne, show_histogram = False):
 
@@ -72,27 +75,27 @@ class Amod:
 
         j = 0
         l_elapsed = []
+        pulse_width = 10e-6
+        t_pause_between_mesures = 10e-3
+        t_timeout = 1
+        VCEsat = 15e-3
         while j < n_moyenne:
             
-            time.sleep(self.t_discharge) # laisser du temps pour décharger le condo
+            time.sleep(t_pause_between_mesures) # laisser du temps pour décharger le condo
             
-            self.stop_requierd = False
+            self.end_requierd = False
             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure (NE555 -> TRIG passe à 0)
-            self.t_charge_start = time.time() # déclancher le chrono
-#TODO: voir s'il ne faut pas inverser les deux opérations ci-dessus
-#             time.sleep(10e-6)
-#             GPIO.output(self.pin_cmd, GPIO.HIGH) # (NE555 rétablir TRIG à 1)
-            while not self.stop_requierd:
-                if time.time() - self.t_charge_start > self.v_timeout:
+            time.sleep(pulse_width)
+            GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la mesure (NE555 -> TRIG passe à 0)
+            self.t_start_mesure = time.time() # déclancher le chrono
+            while not self.end_requierd:
+                if time.time() - self.t_start_mesure > t_timeout:
                     stop_requierd = True
                     print("interruption manquée")
-#                     GPIO.output(self.pin_cmd, GPIO.HIGH) # (NE555 rétablir TRIG à 1)
-#                     time.sleep(10e-6)
-#                     GPIO.output(self.pin_cmd, GPIO.HIGH) # (NE555 rétablir TRIG à 1)
                     
-            elapsed = (self.t_charge_stop - self.t_charge_start) - self.rep_int_time
+            elapsed = (self.t_end_mesure - self.t_start_mesure) - self.int_resp_time
             l_elapsed.append(elapsed)
-            GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
+            time.sleep(t_pause_between_mesures)
             j += 1
         GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la décharge du condensateur
         
@@ -107,14 +110,14 @@ class Amod:
         if show_histogram:
             l_tension = []
             for v in l_elapsed:
-                l_tension.append(self.u_in_trig / (1 - math.exp(- v / (self.R1 * self.C1))))
+                l_tension.append(self.u_in_trig / (1 - math.exp(- v / (self.R1 * self.C1))) - VCEsat)
                 
             df1 = pd.DataFrame(l_tension, columns=list('B'))
             l_tension_filtered = df1[((df1.B - df1.B.mean()) / df1.B.std()).abs() < self.filter]
             l_tension_filtered_mean = l_tension_filtered.B.mean()
         
             # plot histogramm
-            n, bins, patches = plt.hist(x=l_tension, bins=min(int(n_moyenne/4),50), color='#0504aa', alpha=0.7, rwidth=0.85)
+            n, bins, patches = plt.hist(x=l_tension, bins=min(int(n_moyenne/2),50), color='#0504aa', alpha=0.7, rwidth=0.85)
             plt.hist(x=l_tension_filtered, bins=bins, color='#ffff00', alpha=0.7, rwidth=0.85)
             plt.grid(axis='y', alpha=0.75)
             plt.xlabel('Avg = ' + '{:.3f}'.format(l_tension_filtered_mean))
@@ -134,54 +137,65 @@ class Amod:
         u_average = self.u_in_trig / (1 - math.exp(- l_ref_filtered_mean / (self.R1 * self.C1)))
         return u_average
     
-    def end_charge_reached(self, channel):
-        self.t_charge_stop = time.time()
-        self.stop_requierd = True
+    def get_response_time(self, show_histogram = False):
 
-    def set_param(self, u_in, xR1, xC1, n_moyenne, int_resp_time):
-
-        GPIO.output(self.pin_cmd, GPIO.HIGH) # décharger le condensateur
-
-        j = 0
-        l_elapsed = []
-        while j < n_moyenne:
-            
-            time.sleep(self.t_discharge) # laisser du temps pour décharger le condo
-            
-            self.stop_requierd = False
-            GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
-            self.t_charge_start = time.time() # déclancher le chrono
-#TODO: voir s'il ne faut pas inverser les deux opérations ci-dessus
-            
-            while not self.stop_requierd:
-                if time.time() - self.t_charge_start > self.v_timeout:
-                    stop_requierd = True
-                    print("interruption manquée")
-            elapsed = (self.t_charge_stop - self.t_charge_start) - self.rep_int_time
-            l_elapsed.append(elapsed)
-            GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur
-            j += 1
-        GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la décharge du condensateur
+        self.v_val.clear()
+        i = 0
+        self.end_requierd = False
+        GPIO.output(self.pin_cmd, GPIO.HIGH) 
+        while i < self.n_moy:
+            time.sleep(20e-6)
+            self.t_start_mesure = time.time()
+            GPIO.output(self.pin_cmd, GPIO.LOW) 
+            while not self.end_requierd:
+                pass
+            elapsed = (self.t_end_mesure - self.t_start_mesure)
+            GPIO.output(self.pin_cmd, GPIO.HIGH) 
+            self.end_requierd = False
+            self.v_val.append(elapsed)
+            i += 1
         
         # get stats of data list
-        nx, mmx, mx, vx, skx, ktx = stat.describe(l_elapsed)
+        nx, mmx, mx, vx, skx, ktx = stat.describe(self.v_val)
         # filter the data list
-        df = pd.DataFrame(l_elapsed, columns=list('B'))
-        l_ref_filtered = df[((df.B - df.B.mean()) / df.B.std()).abs() < self.filter]
-        l_ref_filtered_mean = l_ref_filtered.B.mean()
+        df = pd.DataFrame(self.v_val, columns=list('B'))
+        val_filtered = df[((df.B - df.B.mean()) / df.B.std()).abs() < self.filter]
+        val_filtered_mean = val_filtered.B.mean()
 
-        u_trig_calc = u_in * (1 - math.exp(-l_ref_filtered_mean / (xR1 * xC1)))
+        # create ans show histogramm
+        if show_histogram:
+        
+            # plot histogramm
+            n, bins, patches = plt.hist(x=self.v_val, bins=min(int(self.n_moy),50), color='#0504aa', alpha=0.7, rwidth=0.85)
+            plt.hist(x=val_filtered, bins=bins, color='#ffff00', alpha=0.7, rwidth=0.85)
+            plt.grid(axis='y', alpha=0.75)
+            plt.xlabel('Avg = ' + '{:.3f}'.format(val_filtered_mean*1e3) + " ms")
+            plt.ylabel('Frequency')
+            plt.title("Filtered on " + str(self.filter) + " standard deviation")
+            plt.text(23, 45, r'$\mu=15, b=3$')
+            maxfreq = n.max()
+            # Set a clean upper y-axis limit.
+            plt.ylim(ymax=np.ceil(maxfreq/10) *10 if maxfreq % 10 else maxfreq + 10)
+            # insert a legend
+            blue_patch = mpatches.Patch(color='#0504aa', label='excluded')
+            yellow_patch = mpatches.Patch(color='#ffff00', label='used for avg')
+            plt.legend(handles=[blue_patch, yellow_patch])
 
-        with open('amod.ini', 'w') as ini_file:
-            ini_file.writelines(str(u_trig_calc) + "," + str(xR1) + "," + str(xC1) + "," + str(int_resp_time))
-
-        return u_trig_calc
+            plt.show()
+            
+        GPIO.cleanup()
+        return val_filtered_mean
+    
+    def interrupt_management(self, channel):
+        self.t_end_mesure = time.time()
+        self.end_requierd = True
 
 if __name__ == '__main__':
 
     #verify tension and filtering
     amod = Amod()
     a = amod.get_tension(50, show_histogram = True)
+#     amod.test_ne555()
     
     GPIO.cleanup()
 

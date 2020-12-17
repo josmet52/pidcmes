@@ -15,8 +15,8 @@ class Cirt:
     
     def __init__(self):
         
-        self.pin_cmd = 38 # control pin
-        self.pin_mes = 36 # measure pin
+        self.pin_cmd = 8 # control pin
+        self.pin_mes = 10 # measure pin
         
         self.t_start = 0
         self.end_ok = False
