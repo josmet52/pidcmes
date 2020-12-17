@@ -12,7 +12,7 @@ from subprocess import call
 
 # from lib.time_mesure_lib import Exec_time_mesurment
 from amod_393_lib import Amod # class for 'amod' procedures
-from lib.mysql_amod_lib import Mysql_amod # class for 'mysql' procededures
+# from lib.mysql_amod_lib import Mysql_amod # class for 'mysql' procededures
 
 import pdb
 
@@ -85,14 +85,14 @@ if __name__ == '__main__':
 
     bat_mon_dyn = Bat_mon_dyn() # initialize bat_mon_dyn class
         
-    mysql_amod = Mysql_amod('192.168.1.139') # initialize mysql class with server IP adress 
-    sql_txt = "DELETE FROM tlog;" # delete all datas in tlog table
-    mysql_amod.execute_sql(sql_txt) 
+#     mysql_amod = Mysql_amod('192.168.1.139') # initialize mysql class with server IP adress 
+#     sql_txt = "DELETE FROM tlog;" # delete all datas in tlog table
+#     mysql_amod.execute_sql(sql_txt) 
 
     amod = Amod() # initialize amode class
 
     u_bat_min = 3.4 # minumum battery voltage 
-    n_moy = 5 # averaging to reduce glitches
+    n_moy = 50 # averaging to reduce glitches
     t_sleep = 2 # sleep time between two mesurements
     i = 0 # to count the passes
     stop_run = False # to control the execution (run/stop)
@@ -111,15 +111,15 @@ if __name__ == '__main__':
         if u_avg < u_min : u_min = u_avg
         if u_avg > u_max : u_max = u_avg
         
-        sql_txt = " ".join(["INSERT INTO tlog (mes_value) VALUES (", str(u_avg), ")"]) # save it in the database
-        mysql_amod.execute_sql(sql_txt)
+#         sql_txt = " ".join(["INSERT INTO tlog (mes_value) VALUES (", str(u_avg), ")"]) # save it in the database
+#         mysql_amod.execute_sql(sql_txt)
 
         xdata.append(dt.datetime.now())
         ydata.append(u_avg)
         bat_mon_dyn.add_point(xdata, ydata)
 
-        print(dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " - Mesure: " + str(i) + " -> " + '{:.4f}'.format(u_avg) \
-              + "[V] dispertion = " + '{:.1f}'.format((u_max - u_min) * 1000) + " [mV]")
+        print(dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " - Mesure: " + str(i) + " -> " + '{:.4f}'.format(u_avg))# \
+#               + "[V] dispertion = " + '{:.1f}'.format((u_max - u_min) * 1000) + " [mV]")
         
 #         pdb.set_trace()
         

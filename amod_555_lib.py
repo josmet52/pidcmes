@@ -61,7 +61,7 @@ class Amod:
 
 
         if from_who != "calibration": # if not in calibration read the ini data 
-            with open('amod.ini', 'r') as ini_file:
+            with open('amod_555.ini', 'r') as ini_file:
                 data = ini_file.readlines()
                 params = data[0].split(",")
                 self.u_in_trig = float(params[0]) # the input trigger level (depend on the harware)
