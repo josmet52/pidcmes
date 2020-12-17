@@ -28,8 +28,8 @@ class Amod:
         VERSION_STATUS = "initial version"
         VERSION_AUTEUR = "josmet"
         
-        self.pin_cmd = 38 # control pin
-        self.pin_mes = 36 # measure pin
+        self.pin_cmd = 8 # control pin
+        self.pin_mes = 10 # measure pin
   
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
@@ -37,6 +37,15 @@ class Amod:
         GPIO.setup(self.pin_mes, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
         GPIO.add_event_detect(self.pin_mes, GPIO.RISING, callback=self.end_charge_reached) 
         GPIO.output(self.pin_cmd, GPIO.HIGH) 
+
+#         pdb.set_trace()
+#         # test pins cmd and mes 
+#         pdb.set_trace()
+#         GPIO.output(self.pin_cmd, GPIO.LOW) 
+#         print(GPIO.input(self.pin_mes))
+#         GPIO.output(self.pin_cmd, GPIO.HIGH) 
+#         print(GPIO.input(self.pin_mes))
+        
         
         self.t_discharge = 250e-6 # time to discharge the capacitor
         self.t_charge_stop = 0.0
@@ -68,14 +77,19 @@ class Amod:
             time.sleep(self.t_discharge) # laisser du temps pour décharger le condo
             
             self.stop_requierd = False
-            GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure
+            GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure (NE555 -> TRIG passe à 0)
             self.t_charge_start = time.time() # déclancher le chrono
 #TODO: voir s'il ne faut pas inverser les deux opérations ci-dessus
-            
+#             time.sleep(10e-6)
+#             GPIO.output(self.pin_cmd, GPIO.HIGH) # (NE555 rétablir TRIG à 1)
             while not self.stop_requierd:
                 if time.time() - self.t_charge_start > self.v_timeout:
                     stop_requierd = True
                     print("interruption manquée")
+#                     GPIO.output(self.pin_cmd, GPIO.HIGH) # (NE555 rétablir TRIG à 1)
+#                     time.sleep(10e-6)
+#                     GPIO.output(self.pin_cmd, GPIO.HIGH) # (NE555 rétablir TRIG à 1)
+                    
             elapsed = (self.t_charge_stop - self.t_charge_start) - self.rep_int_time
             l_elapsed.append(elapsed)
             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la décharge du condensateur

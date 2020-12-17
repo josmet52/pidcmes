@@ -19,7 +19,7 @@ print("Installez le pont entre la sortie et l'entrée pour la calibration du tem
 v_ok = input()
 cirt = Cirt()
 int_resp_time = cirt.get_response_time()
-print(int_resp_time)
+print('{:.3f}'.format(int_resp_time * 1e6) + " us")
 
 print("Rétablissez le schéma normal")
 v_ok = input()
