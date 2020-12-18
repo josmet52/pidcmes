@@ -8,7 +8,7 @@
 import matplotlib.pyplot as plt
 
 # from lib.time_mesure_lib import Exec_time_mesurment
-from amod_555_lib import Amod
+from amod_lib import Amod
 amod = Amod("calibration")
 
 R1 = 100E3
@@ -16,10 +16,10 @@ C1 = 100e-9
 
 print("Installez le pont entre la sortie et l'entrée pour la calibration du temps de répose des interruptions")
 v_ok = input()
-int_resp_time = amod.get_response_time()
+int_resp_time = amod.get_response_time(show_histogram = True)
 print('{:.1f}'.format(int_resp_time * 1e6) + " us")
 
-print("Quelle est la tension mesurée sur la pin 5 du NE555? (défaut = 2.98)")
+print("Quelle est la tension mesurée sur la pin 5 du NE555? (défaut = 2.5)")
 u_trig = 2.98
 u_in = input()
 if u_in : u_trig = float(u_in)
