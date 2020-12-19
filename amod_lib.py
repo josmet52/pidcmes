@@ -22,6 +22,7 @@ class Amod:
     
     def __init__(self, from_who = ""):
         
+        print(from_who)
         # version infos
         VERSION_NO = "0.01.01" 
         VERSION_DATE = "27.11.2020"
@@ -77,7 +78,9 @@ class Amod:
         self.lines, = self.ax.plot([],[], '-')
         #Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscaley_on(True)
-        self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
+#         if from_who == "amod":
+#             print("haha")
+#             self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
         self.ax.set_title("Battery charge and discharge monitoring")
         self.ax.set_ylabel("Tension [V]")
 
@@ -161,9 +164,6 @@ class Amod:
             
         u_average = self.u_in_trig / (1 - math.exp(- l_ref_filtered_mean / (self.R1 * self.C1)))
         return u_average
-# 
-#     def getCPUuse(self):
-#         return str(os.popen("top -n1 | awk '/Cpu\(s\):/ {print $2}'").readline())
 
     def get_response_time(self, show_histogram = False):
 
@@ -225,8 +225,8 @@ if __name__ == '__main__':
 
     #verify tension and filtering
     amod = Amod()
-    print("amod_393_lib mesure démarre")
-    a = amod.get_tension(200, show_histogram = True)
+    print("amod_lib mesure démarre")
+    a = amod.get_tension(50, show_histogram = True)
 #     amod.test_ne555()
     
     GPIO.cleanup()
