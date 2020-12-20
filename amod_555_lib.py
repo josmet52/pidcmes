@@ -19,7 +19,7 @@ import pdb
 
 class Amod:
     
-    def __init__(self, from_who = ""):
+    def __init__(self, pin_cmd_bat = 8, pin_mes_bat = 10, pin_cmd_out = 12, pin_mes_out = 16, from_who = ""):
         
         # version infos
         VERSION_NO = "0.01.01" 
@@ -27,16 +27,20 @@ class Amod:
         VERSION_DESCRIPTION = "prototype"
         VERSION_STATUS = "initial version"
         VERSION_AUTEUR = "josmet"
-        
-        self.pin_cmd = 8 # control pin
-        self.pin_mes = 10 # measure pin
+#         
+#         self.pin_cmd = 8 # control pin
+#         self.pin_mes = 10 # measure pin
   
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
-        GPIO.setup(self.pin_cmd, GPIO.OUT)  # initialize control pin                  
-        GPIO.setup(self.pin_mes, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
-        GPIO.add_event_detect(self.pin_mes, GPIO.FALLING, callback=self.interrupt_management) 
-        GPIO.output(self.pin_cmd, GPIO.LOW) 
+        GPIO.setup(pin_cmd_bat, GPIO.OUT)  # initialize control pin                  
+        GPIO.setup(pin_mes_bat, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
+        GPIO.setup(pin_cmd_out, GPIO.OUT)  # initialize control pin                  
+        GPIO.setup(pin_mes_out, GPIO.IN)  # initialize measure pi (attention no pull-up or pull-down)
+        GPIO.add_event_detect(pin_mes_bat, GPIO.FALLING, callback=self.interrupt_management) 
+        GPIO.add_event_detect(pin_mes_out, GPIO.FALLING, callback=self.interrupt_management) 
+        GPIO.output(pin_cmd_bat, GPIO.LOW) 
+        GPIO.output(pin_cmd_out, GPIO.LOW) 
 
 #         pdb.set_trace()
 #         # test pins cmd and mes 
@@ -68,10 +72,57 @@ class Amod:
                 self.R1 = float(params[1]) # value of the resistor
                 self.C1 = float(params[2]) # value of the capacitor
                 self.int_resp_time = float(params[3]) # interrupt response time
+                
+        #Set up plot
+        self.figure, self.ax = plt.subplots(2)
+        # plot [0]
+        self.lines_0, = self.ax[0].plot([],[], 'r-')
+        #Autoscale on unknown axis and known lims on the other
+        self.ax[0].set_autoscaley_on(True)
+        self.ax[0].xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
+        self.ax[0].set_title("battery monitoring")
+        self.ax[0].set_ylabel("Tension [V]")
+        # Format the x-axis for dates (label formatting, rotation)
+        self.figure.autofmt_xdate(rotation=45)
+        #Other stuff
+        self.ax[0].grid()
         
-    def get_tension(self, n_moyenne, show_histogram = False):
+        # plot [1]
+        self.lines_1, = self.ax[1].plot([],[], 'b-')
+        #Autoscale on unknown axis and known lims on the other
+        self.ax[1].set_autoscaley_on(True)
+        self.ax[1].xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
+        self.ax[1].set_title("VCC monitoring")
+        self.ax[1].set_ylabel("Tension [V]")
+        # Format the x-axis for dates (label formatting, rotation)
+        self.figure.autofmt_xdate(rotation=45)
+        #Other stuff
+        self.ax[1].grid()
 
-        GPIO.output(self.pin_cmd, GPIO.HIGH) # décharger le condensateur
+    def add_point(self, xdata, ydata_bat, ydata_out):
+        #Update data (with the new _and_ the old points)
+        
+        self.lines_0.set_xdata(xdata)
+        self.lines_0.set_ydata(ydata_bat)
+        #Need both of these in order to rescale
+        self.ax[0].relim()
+        self.ax[0].autoscale_view()
+        #We need to draw *and* flush
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
+        
+        self.lines_1.set_xdata(xdata)
+        self.lines_1.set_ydata(ydata_out)
+        #Need both of these in order to rescale
+        self.ax[1].relim()
+        self.ax[1].autoscale_view()
+        #We need to draw *and* flush
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
+        
+    def get_tension(self, n_moyenne, pin_cmd = 8, pin_mes = 10, show_histogram = False):
+
+        GPIO.output(pin_cmd, GPIO.HIGH) # décharger le condensateur
 
         j = 0
         l_elapsed = []
@@ -84,9 +135,9 @@ class Amod:
             time.sleep(t_pause_between_mesures) # laisser du temps pour décharger le condo
             
             self.end_requierd = False
-            GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure (NE555 -> TRIG passe à 0)
+            GPIO.output(pin_cmd, GPIO.LOW) # déclancher la mesure (NE555 -> TRIG passe à 0)
             time.sleep(pulse_width)
-            GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la mesure (NE555 -> TRIG passe à 0)
+            GPIO.output(pin_cmd, GPIO.HIGH) # déclancher la mesure (NE555 -> TRIG passe à 0)
             self.t_start_mesure = time.time() # déclancher le chrono
             while not self.end_requierd:
                 if time.time() - self.t_start_mesure > t_timeout:
@@ -97,7 +148,7 @@ class Amod:
             l_elapsed.append(elapsed)
             time.sleep(t_pause_between_mesures)
             j += 1
-        GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la décharge du condensateur
+        GPIO.output(pin_cmd, GPIO.LOW) # déclancher la décharge du condensateur
         
         # get stats of data list
         nx, mmx, mx, vx, skx, ktx = stat.describe(l_elapsed)
@@ -194,7 +245,8 @@ if __name__ == '__main__':
 
     #verify tension and filtering
     amod = Amod()
-    a = amod.get_tension(50, show_histogram = True)
+    a = amod.get_tension(20, 8, 10, show_histogram = True)
+    b = amod.get_tension(20, 12, 16, show_histogram = True)
 #     amod.test_ne555()
     
     GPIO.cleanup()
