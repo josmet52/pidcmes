@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 plt.ion()
@@ -43,16 +45,16 @@ if __name__ == '__main__':
         mysql_amod.execute_sql(sql_txt)
 
         xdata.append(dt.datetime.now())
-        ydata.append(u_avg)
+        ydata.append(round(u_avg,2))
         amod.add_point(xdata, ydata)
 
-        print(dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " - Mesure: " + str(i) + " -> " + '{:.4f}'.format(u_avg))
+        print(dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " - Mesure: " + str(i) + " -> " + '{:.2f}'.format(u_avg))
         
         if u_avg < u_bat_min:# or i > 10: 
 #             amod.plot_data() # graph the data's
             print("proper shut down of the machine due to low battery")
 #             time.sleep(5)
 #             call("sudo shutdown -h now", shell=True) # shutdown the RASPI
-        t = 60 - dt.datetime.now().second
+        t = 10 - dt.datetime.now().second
 #         print(t)
-        time.sleep(t)
+        time.sleep(1)
