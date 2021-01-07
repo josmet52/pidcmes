@@ -162,6 +162,7 @@ class Amod:
 
             plt.show()
             
+            u_for_graph = 
         u_average = self.u_in_trig / (1 - math.exp(- l_ref_filtered_mean / (self.R1 * self.C1)))
         return u_average
 

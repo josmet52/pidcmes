@@ -22,7 +22,6 @@ class Pidcmes:
     
     def __init__(self, from_who = ""):
         
-        print(from_who)
         # version infos
         VERSION_NO = "0.01.01" 
         VERSION_DATE = "27.11.2020"
@@ -172,7 +171,7 @@ class Pidcmes:
         x = 0
         self.end_requierd = False
         GPIO.output(self.pin_cmd, GPIO.HIGH) 
-        while i < self.n_moy:
+        while i < 1000:
             
             time.sleep(self.t_pause_between_mesures) # laisser du temps pour décharger le condo
             
@@ -212,6 +211,7 @@ class Pidcmes:
             yellow_patch = mpatches.Patch(color='#ffff00', label='used for avg')
             plt.legend(handles=[blue_patch, yellow_patch])
 
+            print("fermer le graphique pour continuer")
             plt.show()
             
 #         GPIO.cleanup()

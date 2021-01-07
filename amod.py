@@ -45,7 +45,7 @@ if __name__ == '__main__':
         mysql_amod.execute_sql(sql_txt)
 
         xdata.append(dt.datetime.now())
-        ydata.append(round(u_avg,2))
+        ydata.append(round(u_avg,3))
         amod.add_point(xdata, ydata)
 
         print(dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " - Mesure: " + str(i) + " -> " + '{:.2f}'.format(u_avg))

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 plt.ion()
@@ -53,7 +54,8 @@ if __name__ == '__main__':
             print("proper shut down of the machine due to low battery")
 #             time.sleep(5)
 #             call("sudo shutdown -h now", shell=True) # shutdown the RASPI
-        t = 60 - dt.datetime.now().second
+        t = 5 - dt.datetime.now().second
+        if t < 0 : t = 1
 #         print(t)
         time.sleep(t)
 
