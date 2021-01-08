@@ -25,7 +25,7 @@ if __name__ == '__main__':
     pidcmes = Pidcmes() # initialize pidcmese class
     pidcmes.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
 
-    u_bat_min = 3.4 # minumum battery voltage 
+    u_bat_min = 2.5 # minumum battery voltage 
     n_moy = 20 # averaging to reduce glitches
     t_sleep = 2 # sleep time between two mesurements
     i = 0 # to count the passes
@@ -47,14 +47,14 @@ if __name__ == '__main__':
         ydata.append(u_avg)
         pidcmes.add_point(xdata, ydata)
 
-        print(dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " - Mesure: " + str(i) + " -> " + '{:.4f}'.format(u_avg))
+        print(dt.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " - Mesure: " + str(i) + " -> " + '{:.2f}'.format(u_avg))
         
         if u_avg < u_bat_min:# or i > 10: 
 #             pidcmes.plot_data() # graph the data's
             print("proper shut down of the machine due to low battery")
 #             time.sleep(5)
 #             call("sudo shutdown -h now", shell=True) # shutdown the RASPI
-        t = 5 - dt.datetime.now().second
+        t = 60 - dt.datetime.now().second
         if t < 0 : t = 1
 #         print(t)
         time.sleep(t)

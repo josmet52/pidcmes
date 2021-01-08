@@ -14,7 +14,8 @@ This program measures the interruption latency time of the Raspberry PI used and
 the values of R1, C1, ref_voltage and interrupt_latency_time in the file pidcmes.ini
 thus if the harware changes - modification of the value of electronic components
 or use of another Raspberry PI model - the new values can be saved in the
-'pidcmes.ini' file by the 'pidcmes_calibration.py' program
+'pidcmes.ini' file by this program
+
 """
 
 # import the class Pidcmes and initialize it
@@ -30,22 +31,24 @@ u_trig = "2.5" # LM336 characteristic
 #Start the latency interrupt time measurement
 print("CALIBRATION")
 print("-----------")
-print("Install the bridge between pin 8 and pin 10 for the interrupt latency measurement")
+print("Install the bridge between pin " + str(pidcmes.pin_cmd) + " and pin " + str(pidcmes.pin_mes) + " for the interrupt latency measurement")
 v_ok = input("ENTER to continue")
-print("... measurement in progress ...")
+print("\n... measurement in progress ... (it may take a few seconds)")
 
 # execute the latency _time measurement
-int_resp_time = pidcmes.get_response_time(show_histogram = False)
+int_resp_time = pidcmes.get_interrupt_latency() - 1.1e-3
 
 # print the results
 print("\nThe following values are saved in the pidcmes.ini file")
-print("Reference voltage = ", u_trig)
-print("R1 = " + str(R1))
-print("C1 = " + str(C1))
-print("Interrupt latency = ", '{:.1f}'.format(int_resp_time * 1e6) + " us")
-print("\nRemember to remove the bridge between pin 8 and pin 10\n")
+print("--------------------------------------------------------")
+print("Reference voltage (LM336) = ", u_trig + " Volts")
+print("R1 = " + str(R1)+ " Ohms")
+print("C1 = " + str(C1) + " Farads")
+print("Interrupt latency = ", '{:.2f}'.format(int_resp_time * 1e3) + " milli seconds")
+print("\nRemember to remove the bridge between pin ".upper() + str(pidcmes.pin_cmd) + " and pin ".upper() + str(pidcmes.pin_mes))
+print("======================================================\n")
 
-# Save the value in the .ini file
-with open('pidcmes.ini', 'w') as ini_file:
+with open("".join([pidcmes.app_dir, '/pidcmes.ini']), 'w') as ini_file:
     ini_file.writelines(u_trig + "," + R1 + "," + C1 + "," + '{:.6f}'.format(int_resp_time))
-
+    
+print("Calibration completed ... bye")
