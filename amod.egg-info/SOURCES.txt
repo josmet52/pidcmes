@@ -1,5 +1,0 @@
-setup.py
-amod.egg-info/PKG-INFO
-amod.egg-info/SOURCES.txt
-amod.egg-info/dependency_links.txt
-amod.egg-info/top_level.txt
