@@ -1,119 +1,113 @@
-# Raspberry PI : mesure d'une tension continue
+# Raspberry PI : DC voltage measurement
 
-## Préambule
+## Preamble
 
-Le Raspberry PI est un ordinateur mon-carte de petite taille qui tourne
-sous Raspberry-OS (distribution de Debian). Le PI offre un bus complet
-d'entrées sorties numérique mais aucune entrée analogique.
+The Raspberry PI is a small, single-board computer that runs
+under Raspberry-OS (distribution of Debian). The PI offers a complete 
+digital inputs-outputs bus, but no analog input.
 
-Le but de mon projet est de permettre le suivi de l'état de charge de la
-batterie d'une alimentation sans coupure afin d'assurer un arrêt propre
-du système en cas de coupure de courant.
+The goal of my project is to allow the monitoring of the state of charge of the
+battery from uninterruptible power supply to ensure a clean shutdown
+system in the event of a power failure. The LIPO battery I use
+sees its voltage vary from 4.2 to 3.5 V.
 
 ## Introduction
 
-Lors du développement d'un projet sur Raspberry PI le besoin d'une
-alimentation sans coupure m'a amené à chercher une solution
-d'alimentation sans coupure en cas de chute du réseau électrique. J'ai
-trouvé des solutions chez différents fournisseurs pour assurer
-proprement la transition entre l'amentation réseau et la batterie mais
-ces système ne permettent pas d'informer le PI que la batterie est
-bientôt vide et qu'il faudrait arrêter proprement le système
-d'exploitation avant la chute définitive de la tension d'alimentation.
+For a project on Raspberry PI I must ensure an uninterruptible power supply
+in the event of a drop in the electrical network. I found solutions at different
+suppliers to properly ensure the transition between network and
+battery but these systems do not allow the PI to be informed that the battery is
+soon empty and the operating system should be shut down properly.
 
-Dans ce but j'ai développé et testé plusieures variantes toutes baséées
-sur le même principe soit : mesure le temps que met un condensateur pour
-se charge à une tension connue et convertir ce temps en valeur de
-tension. Ces différents essais m'ont amené sur le montage que je vous
-propose aujourd'hui.
+For this purpose I have developed and tested several variants all based
+on the same principle: measure the time taken by a capacitor to
+charge to a known voltage and convert this time to a value of
+voltage. These different tests led me to the solution that I
+offers today.
 
-## Principe de base
+## Basic principle
 
-![](media/image1.jpeg){width="6.3in" height="2.6638888888888888in"}
+*Insert the schematic*
 
-La tension à mesurer est appliquée sur l'entrée BBU-BAT. La commande
-RPI-CMD est relié sur la borne GPIO (8 dans mon cas) du PI settée comme
-une sortie et la sortie RPI-MES est reliée sur la borne GPIO (10 dans
-mon cas) du PI settée comme une entrée. Les Connexions VCC (borne 4) et
-GND (borne 6) sont branchées sur le PI.
+The voltage to be measured is applied to the BBU-BAT input. The command
+RPI-CMD is connected to the GPIO terminal (8 in my case) of the PI set as
+an output and the RPI-MES output is connected to the GPIO terminal (10 in
+my case) of the PI set as an entry. The VCC Connections (terminal 4) and
+GND (terminal 6) are connected to the PI. The mass (GND) of the signal to be 
+measured and that of the PI are linked.
 
-Le principe de fonctionnement est le suivant :
+The principle of operation is as follows:
 
-Avant de lancer une mesure la sortie RPI-CMD est mise à « 1 » ainsi le
-condensateur C1 est déchrgé. Pour lancer la mesure, le PI met l'entrée
-CMD à « 0 » ainsi le condensateur peut se charger au travers de la
-résistance R1 alimentée par la tension à mesurer. Lorsque la tension aux
-bornes du condensateur atteint 2.5V, le comparateur IC1 fait passer sa
-sortie de « 1 » à « 0 ». Le PI mesure le temps écoulé entre le lancement
-de la mesure et le moment ou la sortie du comparateur passe de « 1 » à
-« 0 ». Connaissant les caractéristiques du circuit R1, C1 il est
-possible de claculer la valeur de la tension appliquée à l'entrée
-BBU-BAT par la formule :
+Before launching a measurement the RPI-CMD output is set to "1" thus the MOSFET T1
+is made conductive which discharges the capacitor C1. To start the measurement, the 
+PI puts the input CMD at "0" so the MOSFET T1 is blocked and the capacitor can be 
+charged through the resistor R1 supplied by the voltage to be measured. When the 
+voltage at capacitor terminals reach 2.5V, comparator IC1 passes its
+output from "1" to "0". The PI measures the time elapsed between the launch
+of the measurement and the moment when the comparator output goes from "1" to
+"0". Knowing the characteristics of the circuit R1, C1 it is
+possible to claculate the value of the voltage applied to the input
+BBU-BAT by the formula:
 
-$$U = \frac{\text{UTRIG}}{1 - e^{- \frac{\text{TMES}}{R1*C1}}}$$
+*Insert équation*
 
-Où UTRIG = tension de référence (2.5V) et TMES = temps écoulé entre le
-lancement de la mesure et le moment ou la sortie du comparateur passe de
-« 1 » à « 0 » diminué du temps de latence.
+Where UTRIG = reference voltage (2.5V) and TMES = time elapsed between
+start of the measurement and the moment when the comparator output changes from
+“1” to “0” minus the latency time.
 
-## Calibration du système
+## System calibration
 
-La détection du changement d'état de l'entrée RPI-MES est géré en Python
-en utilisant une interruption ce qui implique de tenir compte du temps
-de latence du PI (temps que le PI met pour répondre à l'interruption).
-Ce temps peut être mesuré simplement en reliant la sortie RPI-CMD (8) à
-l'entrée RPI-MES (10) et à mesure le temps écoulé entre le changement
-d'état de la sortie et la réaction du PI.
+The detection of the change of state of the RPI-MES entry is managed in Python
+using an interrupt which implies taking into account the time
+PI latency (time that the PI takes to respond to the interrupt).
+This time can be measured simply by connecting the RPI-CMD (8) output to
+the RPI-MES input (10) and measures the time elapsed between the change
+status of the output and the reaction of the PI.
 
-## Limites du principe utilisé
+## Limits of the principle used
 
-#### Courant consommé sur le point de mesure
+#### Current consumed at the measuring point
 
-En branchant l'entrée sans amplificateur directement sur le point à
-mesurer on consomme obligatoirement du courant sur cette source. Comme
-la valeur de la résistance est de 100kΩ, le courant max tiré du point de
-mesure est de 100 μA. A l'utilisateur de déterminer si cela est
-acceptable. Dans mon cas aucun problème car je mesure la tension de la
-batterie de l'alimentation sans coupure.
+By connecting the input without amplifier directly to the point to
+measuring current is necessarily consumed on this source. As
+the resistance value is 100kΩ, the maximum current drawn from the
+measurement is 100 μA. It is up to the user to determine if this is
+acceptable. In my case no problem because I measure the voltage of the
+battery from the uninterruptible power supply.
 
-#### Plage de tension admissible
+#### Permissible voltage range
 
-Le principe utilisé n'autorise pas de tension mesurée en dessous de 2.5V
-pour assurer que la tension aux bornes du condensateur puisse atteindre
-2.5V et faire basculer la sortie du comparateur. La tension maximale qui
-peut être appliquée est limitée par le comparateur LM393 et peut
-atteindre 36V. Cependant comme il n'y a aucune protection entre l'entrée
-de mesure et le PI, un défaut du LM393 pourrait amener la tension
-d'entrée directement sur la borne RPI-MES ou, si le MOSFET devenait
-défectueux, sur la borne RPI-CMD. Je recommande donc de ne pas dépasser
-la tension max admissible par le port GPIO du PI soit 5V.
+The principle used does not allow a voltage measured below 2.8V
+to ensure that the voltage across the capacitor can reach
+2.8V and switch the comparator output. The maximum voltage that
+can be applied is limited by the LM393 comparator and can
+reach 36V. However, as there is no protection between the entrance
+measurement and the PI, a fault in the LM393 could cause the voltage
+input directly to the RPI-MES terminal or, if the MOSFET becomes
+defective, on the RPI-CMD terminal. I therefore recommend not to exceed
+the maximum voltage admissible by the GPIO port of the PI is 5V.
 
-## Fiabilité de la mesure
+## Measurement reliability
 
-Le principe de mesure dépend très fortement du temps de latence du PI.
-Si le processeur est occupé à d'autres tâches prioritaires, le temps de
-latence peut fortement augmenter sur une ou deux mesures. Pour éliminer
-ces mauvaises mesures je fais un grand nombre de mesures et rejette
-celles qui sont en dehors de 1.5 écarts types de l'ensemble des mesures
-puis je fais la moyenne des mesures restantes.
+The measurement principle depends very strongly on the latency time of the PI.
+If the processor is busy with other priority tasks, the
+latency can increase sharply over one or two measures. To eliminate
+these bad measurements I make a large number of measurements and reject
+those which are outside 1.5 standard deviations of all the measurements
+then I average the remaining measurements.
 
 ## Software
 
-Le software est écrit en Python est peut être téléchargé depuis GitHub
-par le lien : <https://github.com/josmet52/amod>
+The software is written in Python and can be downloaded from GitHub
+by the link: <https://github.com/josmet52/pidcmes>
 
 ## Nomenclature
 
-Les composants utilisés sont :
+The components used are:
 
--   T1 = BS170 -- MOSFET canal N
-
--   D1 = LM336-2.5V - diode de référence de 2.5V
-
--   IC1 = LM393N - Low-Offset Voltage, Dual Comparators
-
--   R1 = 100kΩ -- Résistance
-
--   R2 = 2.5kΩ -- Résistance
-
--   C1 = 1μF -- Condensateur céramique
+- T1 = BS170 - MOSFET channel N
+- D1 = LM336-2.5V - 2.5V reference diode
+- IC1 = LM393N - Low-Offset Voltage, Dual Comparators
+- R1 = 100kΩ - Resistance
+- R2 = 2.5kΩ - Resistance
+- C1 = 1μF - Ceramic capacitor
