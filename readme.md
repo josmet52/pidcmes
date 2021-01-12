@@ -27,12 +27,12 @@ offers today.
 
 ## Basic principle
 
-*Insert the schematic*
+*schematic to be inserted*
 
-The voltage to be measured is applied to the BBU-BAT input. The command
-RPI-CMD is connected to the GPIO terminal (8 in my case) of the PI set as
+The voltage to be measured is applied between the BBU-BAT and GND terminals. The 
+command RPI-CMD is connected to the GPIO terminal (8 in my case) of the PI set as
 an output and the RPI-MES output is connected to the GPIO terminal (10 in
-my case) of the PI set as an entry. The VCC Connections (terminal 4) and
+my case) of the PI set as an input. The VCC Connections (terminal 4) and
 GND (terminal 6) are connected to the PI. The mass (GND) of the signal to be 
 measured and that of the PI are linked.
 
@@ -46,10 +46,10 @@ voltage at capacitor terminals reach 2.5V, comparator IC1 passes its
 output from "1" to "0". The PI measures the time elapsed between the launch
 of the measurement and the moment when the comparator output goes from "1" to
 "0". Knowing the characteristics of the circuit R1, C1 it is
-possible to claculate the value of the voltage applied to the input
-BBU-BAT by the formula:
+possible to calculate the value of the voltage applied to the input
+BBU-BAT by the formula
 
-*Insert équation*
+*équation to be inserted*
 
 Where UTRIG = reference voltage (2.5V) and TMES = time elapsed between
 start of the measurement and the moment when the comparator output changes from
