@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     # parameters
     AVERAGING_ON = 10 # averaging to reduce glitches
-    T_BETWEEN_MESUREMENTS = 60
+    T_BETWEEN_MESUREMENTS = 300 # one mesure each 5 minutes
     
     #internal variables
     i = 0 # to count the passes

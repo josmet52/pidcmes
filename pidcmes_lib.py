@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*-
 """
-    class Amod to
+    class Pidcmes to
     - read analog tension on two digital pins
     - calibrate the sensor
     - plot the measured data's
@@ -18,8 +18,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 import os
-import pdb
-# import os
 
 class Pidcmes:
         
@@ -39,17 +37,14 @@ class Pidcmes:
         else:
             GPIO.output(self.pin_cmd, GPIO.LOW)
         
-        self.t_end_mesure = 0.0
+        self.t_end_mesure = 0.0 # value changed by interrupt_management()
         self.end_requierd = False
-        self.pulse_width = 10e-6
-        self.t_pause_between_mesures = 0.5e-3
-        self.t_timeout = 1
-        self.VCEsat = 15e-3
-        self.filter = 1.5 # +/- n ecart types gardés
-        self.v_val = []
-        self.n_moy = 50
+        self.PULSE_WIDTH = 10e-6 # pulse width to trig the measure
+        self.T_PAUSE_BETWEEN_MEASURES = 0.5e-3 # sleep time between two measures
+        self.T_TIMEOUT = 1 # if no interruption after t_timeout -> no tension on the measure pin
+        self.filter = 1.5 # +/- filter on n standard deviation
 
-        if from_who != "calibration": # if not in calibration read the ini data 
+        if from_who != "calibration": # if not in calibration read the ini data file
             with open("".join([self.app_dir, '/pidcmes.ini']), 'r') as ini_file:
                 data = ini_file.readlines()
                 params = data[0].split(",")
@@ -90,21 +85,21 @@ class Pidcmes:
         l_elapsed = []
         while j < n_moyenne:
             
-            time.sleep(self.t_pause_between_mesures) # laisser du temps pour décharger le condo
+            time.sleep(self.T_PAUSE_BETWEEN_MEASURES) # laisser du temps pour décharger le condo
             
             self.end_requierd = False
             GPIO.output(self.pin_cmd, GPIO.HIGH) # déclancher la mesure (NE555 -> TRIG passe à 0)
-            time.sleep(self.pulse_width)
+            time.sleep(self.PULSE_WIDTH)
             GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la mesure (NE555 -> TRIG passe à 0)
             self.t_start_mesure = time.time() # déclancher le chrono
             while not self.end_requierd:
-                if time.time() - self.t_start_mesure > self.t_timeout:
+                if time.time() - self.t_start_mesure > self.T_TIMEOUT:
                     self.end_requierd = True
                     print("interruption manquée")
                     
             elapsed = (self.t_end_mesure - self.t_start_mesure) - self.int_resp_time
             l_elapsed.append(elapsed)
-            time.sleep(self.t_pause_between_mesures)
+            time.sleep(self.T_PAUSE_BETWEEN_MEASURES)
             j += 1
 #             print(j)
         GPIO.output(self.pin_cmd, GPIO.LOW) # déclancher la décharge du condensateur
@@ -120,7 +115,7 @@ class Pidcmes:
         if show_histogram:
             l_tension = []
             for v in l_elapsed:
-                l_tension.append(self.u_in_trig / (1 - math.exp(- v / (self.R1 * self.C1))) - self.VCEsat)
+                l_tension.append(self.u_in_trig / (1 - math.exp(- v / (self.R1 * self.C1))))
                 
             df1 = pd.DataFrame(l_tension, columns=list('B'))
             l_tension_filtered = df1[((df1.B - df1.B.mean()) / df1.B.std()).abs() < self.filter]
@@ -157,7 +152,7 @@ class Pidcmes:
         GPIO.output(self.pin_cmd, GPIO.HIGH) 
         while i < n_measures:
             
-            time.sleep(self.t_pause_between_mesures) # laisser du temps pour décharger le condo
+            time.sleep(self.T_PAUSE_BETWEEN_MEASURES) # laisser du temps pour décharger le condo
             
             GPIO.output(self.pin_cmd, GPIO.LOW) 
             t_start_mesure = time.time()
