@@ -40,6 +40,7 @@ if __name__ == '__main__':
 
     # execute the latency _time measurement
     int_resp_time = pidcmes.get_interrupt_latency() - 1.1e-3
+    # for the accuracy of the measurement, the latency must be reduced by 1.1 seconds on a Raspberry PI4 
 
     # print the results
     print("\nThe following values are saved in the pidcmes.ini file")

@@ -28,14 +28,6 @@ class Pidcmes:
     pin_mes = 10 # measure pin
     
     def __init__(self, from_who = ""):
-        
-        # version infos
-        VERSION_NO = "0.01.01" 
-        VERSION_DATE = "27.11.2020"
-        VERSION_DESCRIPTION = "prototype"
-        VERSION_STATUS = "initial version"
-        VERSION_AUTEUR = "josmet"
-        
   
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
@@ -46,15 +38,6 @@ class Pidcmes:
             GPIO.output(self.pin_cmd, GPIO.HIGH)
         else:
             GPIO.output(self.pin_cmd, GPIO.LOW)
-
-#         pdb.set_trace()
-#         # test pins cmd and mes 
-#         pdb.set_trace()
-#         GPIO.output(self.pin_cmd, GPIO.LOW) 
-#         print(GPIO.input(self.pin_mes))
-#         GPIO.output(self.pin_cmd, GPIO.HIGH) 
-#         print(GPIO.input(self.pin_mes))
-        
         
         self.t_end_mesure = 0.0
         self.end_requierd = False
@@ -80,9 +63,6 @@ class Pidcmes:
         self.lines, = self.ax.plot([],[], '-')
         #Autoscale on unknown axis and known lims on the other
         self.ax.set_autoscaley_on(True)
-#         if from_who == "amod":
-#             print("haha")
-#             self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
         self.ax.set_title("Battery charge and discharge monitoring")
         self.ax.set_ylabel("Tension [V]")
 

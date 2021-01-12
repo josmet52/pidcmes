@@ -16,19 +16,23 @@ import datetime as dt
 
 from subprocess import call
 from pidcmes_lib import Pidcmes # class for 'pidcmes' procedures
+
+if __name__ == '__main__':
         
-pidcmes = Pidcmes() # initialize pidcmese class
+    pidcmes = Pidcmes() # initialize pidcmese class
 
-u_bat_min = 3.7 # minumum battery voltage 
-n_moy = 20 # averaging to reduce glitches
-stop_run = False # to control the execution (run/stop)
+    #parameters
+    U_BAT_MIN = 3.7 # minumum battery voltage 
+    AVERAGING_ON = 20 # averaging to reduce glitches
 
-u_avg = pidcmes.get_tension(n_moy) # read the value in volts
+    # internal variables
+    stop_run = False # to control the execution (run/stop)
 
-    
-if u_avg < u_bat_min:# or i > 10: 
-    print("proper shut down of the machine due to low battery")
-#     time.sleep(5)
-#     call("sudo shutdown -h now", shell=True) # shutdown the RASPI
-else:
-    print("tout va bien dormez braves gens")
+    u_avg = pidcmes.get_tension(AVERAGING_ON) # read the value in volts
+        
+    if u_avg < U_BAT_MIN:# or i > 10: 
+        print("proper shut down of the machine due to low battery")
+    #     time.sleep(5)
+    #     call("sudo shutdown -h now", shell=True) # shutdown the RASPI
+    else:
+        print("... all is well sleep good people ...!")
