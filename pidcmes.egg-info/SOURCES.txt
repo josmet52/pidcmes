@@ -1,5 +1,0 @@
-setup.py
-pidcmes.egg-info/PKG-INFO
-pidcmes.egg-info/SOURCES.txt
-pidcmes.egg-info/dependency_links.txt
-pidcmes.egg-info/top_level.txt
