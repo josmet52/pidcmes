@@ -13,7 +13,7 @@ import numpy as np
 import scipy.stats as stat
 import pandas as pd
 import matplotlib
-matplotlib.use("TKAgg")
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
@@ -96,7 +96,10 @@ class Pidcmes:
         u_average = self.u_in_trig / (1 - math.exp(- l_elaps_filtered_mean / (self.R1 * self.C1)))
         if u_average < 0:
             print("elaps: " + '{:.1f}'.format(l_elaps_filtered_mean * 1000) + "ms tension: " + '{:.2f}'.format(u_average) + "V")
-        return u_average, i_min, u_min, i_max, u_max
+        if show_histogram:
+            return u_average, i_min, u_min, i_max, u_max
+        else:
+            return u_average
 
     def calc_and_show_histogram(self, l_elapsed, n_moyenne):
         
