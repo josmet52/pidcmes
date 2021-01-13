@@ -13,7 +13,7 @@ import numpy as np
 import scipy.stats as stat
 import pandas as pd
 import matplotlib
-matplotlib.use("TkAgg")
+matplotlib.use("TKAgg")
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
