@@ -23,11 +23,29 @@ import matplotlib.dates as mdates
 import time
 import datetime
 from pidcmes_lib import Pidcmes # class for 'pidcmes' procedures
+
+import pdb
         
 if __name__ == '__main__':
 
+#     pdb.set_trace() 
+     
+    #Set up plot
+    figure, ax = plt.subplots()
+    lines, = ax.plot([],[], '-')
+    #Autoscale on unknown axis and known lims on the other
+    ax.set_autoscaley_on(True)
+    ax.set_title("Battery charge and discharge monitoring")
+    ax.set_ylabel("Tension [V]")
+
+    # Format the x-axis for dates (label formatting, rotation)
+    figure.autofmt_xdate(rotation=45)
+    #Other stuff
+    ax.grid()
+            
     pidcmes = Pidcmes() # initialize pidcmese class
-    pidcmes.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
+#     pidcmes.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
 
     # parameters
     AVERAGING_ON = 20 # averaging to reduce glitches
@@ -51,12 +69,19 @@ if __name__ == '__main__':
         # prepare the data for the chart
         xdata.append(datetime.datetime.now())
         ydata.append(u_avg)
-        # show point on graph
-        pidcmes.add_point_on_graph(xdata, ydata)
+
+        #Update data (with the new _and_ the old points)
+        lines.set_xdata(xdata)
+        lines.set_ydata(ydata)
+        #Need both of these in order to rescale
+        ax.relim()
+        ax.autoscale_view()
+        #We need to draw *and* flush
+        figure.canvas.draw()
+        figure.canvas.flush_events()
 
         # displays the measured value
         print("measure no: " + str(i) + " - " + datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " -> " + '{:.2f}'.format(u_avg))
-#               + "V (duration of the measurement " + '{:.2f}'.format(T_BETWEEN_MESUREMENTS - (t_next_mes - datetime.datetime.now()).total_seconds()) + "s)")
         
         #calculates and executes sleep time
         t_sleep = max((t_next_mes - datetime.datetime.now()).total_seconds(), 0)
