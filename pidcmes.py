@@ -30,8 +30,8 @@ if __name__ == '__main__':
     pidcmes.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
 
     # parameters
-    AVERAGING_ON = 10 # averaging to reduce glitches
-    T_BETWEEN_MESUREMENTS = 300 # one mesure each 5 minutes
+    AVERAGING_ON = 20 # averaging to reduce glitches
+    T_BETWEEN_MESUREMENTS = 5 # one mesure each 5 minutes
     
     #internal variables
     i = 0 # to count the passes
@@ -52,11 +52,11 @@ if __name__ == '__main__':
         xdata.append(datetime.datetime.now())
         ydata.append(u_avg)
         # show point on graph
-        pidcmes.add_point(xdata, ydata)
+        pidcmes.add_point_on_graph(xdata, ydata)
 
         # displays the measured value
-        print("measure no: " + str(i) + " - " + datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " -> " + '{:.2f}'.format(u_avg)
-              + "V (duration of the measurement " + '{:.2f}'.format(T_BETWEEN_MESUREMENTS - (t_next_mes - datetime.datetime.now()).total_seconds()) + "s)")
+        print("measure no: " + str(i) + " - " + datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " -> " + '{:.2f}'.format(u_avg))
+#               + "V (duration of the measurement " + '{:.2f}'.format(T_BETWEEN_MESUREMENTS - (t_next_mes - datetime.datetime.now()).total_seconds()) + "s)")
         
         #calculates and executes sleep time
         t_sleep = max((t_next_mes - datetime.datetime.now()).total_seconds(), 0)

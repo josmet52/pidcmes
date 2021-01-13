@@ -29,7 +29,7 @@ propose aujourd'hui.
 
 ![](media/image1.jpeg){width="6.3in" height="2.6638888888888888in"}
 
-La tension à mesurer est appliquée sur l'entrée BBU-BAT. La commande
+La tension à mesurer est appliquée entre les bornes BBU-BAT et GND. La commande
 RPI-CMD est relié sur la borne GPIO (8 dans mon cas) du PI settée comme
 une sortie et la sortie RPI-MES est reliée sur la borne GPIO (10 dans
 mon cas) du PI settée comme une entrée. Les Connexions VCC (borne 4) et
@@ -46,7 +46,7 @@ bornes du condensateur atteint 2.5V, le comparateur IC1 fait passer sa
 sortie de « 1 » à « 0 ». Le PI mesure le temps écoulé entre le lancement
 de la mesure et le moment ou la sortie du comparateur passe de « 1 » à
 « 0 ». Connaissant les caractéristiques du circuit R1, C1 il est
-possible de claculer la valeur de la tension appliquée à l'entrée
+possible de calculer la valeur de la tension appliquée à l'entrée
 BBU-BAT par la formule :
 
 $$U = \frac{\text{UTRIG}}{1 - e^{- \frac{\text{TMES}}{R1*C1}}}$$
@@ -111,3 +111,8 @@ Les composants utilisés sont :
 -   R1 = 100kΩ -- Résistance
 -   R2 = 2.5kΩ -- Résistance
 -   C1 = 1μF -- Condensateur céramique
+
+## Outils
+
+###pidcmes_lib.py
+

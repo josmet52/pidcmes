@@ -34,7 +34,7 @@ if __name__ == '__main__':
     #Start the latency interrupt time measurement
     print("CALIBRATION")
     print("-----------")
-    print("Install the bridge between pin " + str(pidcmes.pin_cmd) + " and pin " + str(pidcmes.pin_mes) + " for the interrupt latency measurement")
+    print("Install a bridge between pin " + str(pidcmes.pin_cmd) + " and pin " + str(pidcmes.pin_mes) + " for the interrupt latency measurement")
     v_ok = input("ENTER to continue")
     print("\n... measurement in progress ... (it may take a few seconds)")
 
@@ -55,4 +55,4 @@ if __name__ == '__main__':
     with open("".join([pidcmes.app_dir, '/pidcmes.ini']), 'w') as ini_file:
         ini_file.writelines(u_trig + "," + R1 + "," + C1 + "," + '{:.6f}'.format(int_resp_time))
         
-    print("Calibration completed ... bye")
+    print("Calibration completed")
