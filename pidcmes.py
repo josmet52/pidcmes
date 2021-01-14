@@ -14,42 +14,40 @@ The measuring range starts at around 2.8 volts and can go up to more than 10V.
 Warning in the event of a fault in the LM393 comparator or the BS170 MOSFET, the measurement voltage could be applied to the RPI input and destroy it.
  
 """
-import matplotlib
-matplotlib.use("TkAgg")
+# import matplotlib
+# matplotlib.use("TKAgg")
 import matplotlib.pyplot as plt
-plt.ion()
-import matplotlib.dates as mdates
+# plt.ion()
+# import matplotlib.dates as mdates
 
 import time
 import datetime
 from pidcmes_lib import Pidcmes # class for 'pidcmes' procedures
 
-import pdb
+# import pdb
         
 if __name__ == '__main__':
 
-#     pdb.set_trace() 
-     
     #Set up plot
-    figure, ax = plt.subplots()
-    lines, = ax.plot([],[], '-')
+
+    # figure, ax = plt.subplots()
+    # lines, = ax.plot([],[], '-')
     #Autoscale on unknown axis and known lims on the other
-    ax.set_autoscaley_on(True)
-    ax.set_title("Battery charge and discharge monitoring")
-    ax.set_ylabel("Tension [V]")
+    # ax.set_autoscaley_on(True)
+    # ax.set_title("Battery charge and discharge monitoring")
+    # ax.set_ylabel("Tension [V]")
 
     # Format the x-axis for dates (label formatting, rotation)
-    figure.autofmt_xdate(rotation=45)
+    # figure.autofmt_xdate(rotation=45)
     #Other stuff
-    ax.grid()
+    # ax.grid()
             
     pidcmes = Pidcmes() # initialize pidcmese class
-#     pidcmes.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
+    # ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
 
     # parameters
     AVERAGING_ON = 20 # averaging to reduce glitches
-    T_BETWEEN_MESUREMENTS = 5 # one mesure each 5 minutes
+    T_BETWEEN_MESUREMENTS = 3 # one mesure each 5 minutes
     
     #internal variables
     i = 0 # to count the passes
@@ -70,15 +68,25 @@ if __name__ == '__main__':
         xdata.append(datetime.datetime.now())
         ydata.append(u_avg)
 
-        #Update data (with the new _and_ the old points)
-        lines.set_xdata(xdata)
-        lines.set_ydata(ydata)
-        #Need both of these in order to rescale
-        ax.relim()
-        ax.autoscale_view()
-        #We need to draw *and* flush
-        figure.canvas.draw()
-        figure.canvas.flush_events()
+        plt.xticks(rotation=45)
+        plt.title("pidcmes: suivi de la tension")
+        plt.ylabel("Tension [V]")
+        plt.grid(True)
+        plt.autoscale()
+        plt.plot(xdata, ydata, 'b-')
+        plt.pause(2)
+#         plt.close()
+
+        # #Update data (with the new _and_ the old points)
+        # lines.set_xdata(xdata)
+        # lines.set_ydata(ydata)
+        # #Need both of these in order to rescale
+        # ax.relim()
+        # ax.autoscale_view()
+        # #We need to draw *and* flush
+        # figure.canvas.draw()
+        # figure.canvas.flush_events()
+        # figure.show()
 
         # displays the measured value
         print("measure no: " + str(i) + " - " + datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " -> " + '{:.2f}'.format(u_avg))
