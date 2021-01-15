@@ -27,11 +27,11 @@ if __name__ == '__main__':
 
     # Set the values of the measurement circuit
     # this values are from used components
-    R1 = "100E3" # 100 kohms
-    C1 = "1E-6" # 1 uF
-    u_trig = "2.5" # LM336 characteristic
+    R1 = "100E3"  # 100 kohms
+    C1 = "1E-6"  # 1 uF
+    u_trig = "2.5"  # LM336 characteristic
 
-    #Start the latency interrupt time measurement
+    # Start the latency interrupt time measurement
     print("CALIBRATION")
     print("-----------")
     print("Install a bridge between pin " + str(pidcmes.pin_cmd) + " and pin " + str(pidcmes.pin_mes) + " for the interrupt latency measurement")
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     print("\nThe following values are saved in the pidcmes.ini file")
     print("--------------------------------------------------------")
     print("Reference voltage (LM336) = ", u_trig + " Volts")
-    print("R1 = " + str(R1)+ " Ohms")
+    print("R1 = " + str(R1) + " Ohms")
     print("C1 = " + str(C1) + " Farads")
     print("Interrupt latency = ", '{:.2f}'.format(int_resp_time * 1e3) + " milli seconds")
     print("\nRemember to remove the bridge between pin ".upper() + str(pidcmes.pin_cmd) + " and pin ".upper() + str(pidcmes.pin_mes))

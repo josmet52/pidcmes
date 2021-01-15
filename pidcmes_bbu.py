@@ -12,28 +12,28 @@ The crontab -e command in the home directory opens the cron file and the command
 """
 
 import time
-import datetime as dt
+# import datetime as dt
 
 
 from subprocess import call
-from pidcmes_lib import Pidcmes # class for 'pidcmes' procedures
+from pidcmes_lib import Pidcmes  # class for 'pidcmes' procedures
 
 if __name__ == '__main__':
         
-    pidcmes = Pidcmes() # initialize pidcmese class
+    pidcmes = Pidcmes()  # initialize pidcmese class
 
-    #parameters
-    U_BAT_MIN = 3.7 # minumum battery voltage 
-    AVERAGING_ON = 20 # averaging to reduce glitches
+    # parameters
+    U_BAT_MIN = 3.7  # minumum battery voltage
+    AVERAGING_ON = 20  # averaging to reduce glitches
 
     # internal variables
-    stop_run = False # to control the execution (run/stop)
+    stop_run = False  # to control the execution (run/stop)
 
-    u_avg = pidcmes.get_tension(AVERAGING_ON) # read the value in volts
+    u_avg = pidcmes.get_tension(AVERAGING_ON)  # read the value in volts
         
-    if u_avg < U_BAT_MIN:# or i > 10: 
+    if u_avg < U_BAT_MIN:  # or i > 10:
         print("proper shut down of the machine due to low battery")
-    #     time.sleep(5)
-    #     call("sudo shutdown -h now", shell=True) # shutdown the RASPI
+        time.sleep(5)
+        call("sudo shutdown -h now", shell=True)  # shutdown the RASPI
     else:
         print("... all is well sleep good people ...!")

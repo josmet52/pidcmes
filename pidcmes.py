@@ -22,35 +22,35 @@ import matplotlib.pyplot as plt
 
 import time
 import datetime
-from pidcmes_lib import Pidcmes # class for 'pidcmes' procedures
+from pidcmes_lib import Pidcmes  # class for 'pidcmes' procedures
 
 # import pdb
         
 if __name__ == '__main__':
 
-    #Set up plot
+    # Set up plot
 
     # figure, ax = plt.subplots()
     # lines, = ax.plot([],[], '-')
-    #Autoscale on unknown axis and known lims on the other
+    # Autoscale on unknown axis and known lims on the other
     # ax.set_autoscaley_on(True)
     # ax.set_title("Battery charge and discharge monitoring")
     # ax.set_ylabel("Tension [V]")
 
     # Format the x-axis for dates (label formatting, rotation)
     # figure.autofmt_xdate(rotation=45)
-    #Other stuff
+    # Other stuff
     # ax.grid()
             
-    pidcmes = Pidcmes() # initialize pidcmese class
+    pidcmes = Pidcmes()  # initialize pidcmese class
     # ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y %H:%M:%S'))
 
     # parameters
-    AVERAGING_ON = 20 # averaging to reduce glitches
-    T_BETWEEN_MESUREMENTS = 3 # one mesure each 5 minutes
+    AVERAGING_ON = 20  # averaging to reduce glitches
+    T_BETWEEN_MESUREMENTS = 3  # one mesure each 5 minutes
     
-    #internal variables
-    i = 0 # to count the passes
+    # internal variables
+    i = 0  # to count the passes
     xdata = []
     ydata = []
 
@@ -59,11 +59,11 @@ if __name__ == '__main__':
     while True:
         
         # records the time of the start of the measurement to calculate the sleep time
-        t_next_mes = datetime.datetime.now() + datetime.timedelta(seconds = T_BETWEEN_MESUREMENTS)
+        t_next_mes = datetime.datetime.now() + datetime.timedelta(seconds=T_BETWEEN_MESUREMENTS)
         
-        i += 1 # count passes
+        i += 1  # count passes
         # perform the voltage measurement
-        u_avg = round(pidcmes.get_tension(AVERAGING_ON), 2) # read the value in volts
+        u_avg = round(pidcmes.get_tension(AVERAGING_ON), 2)  # read the value in volts
         # prepare the data for the chart
         xdata.append(datetime.datetime.now())
         ydata.append(u_avg)
@@ -91,7 +91,6 @@ if __name__ == '__main__':
         # displays the measured value
         print("measure no: " + str(i) + " - " + datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S") + " -> " + '{:.2f}'.format(u_avg))
         
-        #calculates and executes sleep time
+        # calculates and executes sleep time
         t_sleep = max((t_next_mes - datetime.datetime.now()).total_seconds(), 0)
         time.sleep(t_sleep)
-
