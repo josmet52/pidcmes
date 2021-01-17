@@ -179,22 +179,22 @@ class Pidcmes:
         l_tension_filtered_mean = l_tension_filtered.B.mean()
 
         # plot histogramm
-        n2, bins2, patches2 = plt.hist(x=l_tension, bins=min(int(n_moyenne/2), 50), color='#0504aa', alpha=0.7, rwidth=0.85)
-        plt.hist(x=l_tension_filtered, bins=bins2, color='#ffff00', alpha=0.7, rwidth=0.85)
-        plt.grid(axis='y', alpha=0.75)
-        plt.xlabel('Avg = ' + '{:.3f}'.format(l_tension_filtered_mean))
-        plt.ylabel('Frequency')
-        plt.title("Filtered on " + str(self.FILTER) + " standard deviation")
-        plt.text(23, 45, r'$\mu=15, b=3$')
-        maxfreq_l = n2.max()
-        # Set a clean upper y-axis limit.
-        plt.ylim(ymax=np.ceil(maxfreq_l / 10) * 10 if maxfreq_l % 10 else maxfreq_l + 10)
-        # insert a legend
-        blue_patch = mpatches.Patch(color='#0504aa', label='excluded from the average')
-        yellow_patch = mpatches.Patch(color='#ffff00', label='included in average')
-        plt.legend(handles=[blue_patch, yellow_patch])
+        # n2, bins2, patches2 = plt.hist(x=l_tension, bins=min(int(n_moyenne/2), 50), color='#0504aa', alpha=0.7, rwidth=0.85)
+        # plt.hist(x=l_tension_filtered, bins=bins2, color='#ffff00', alpha=0.7, rwidth=0.85)
+        # plt.grid(axis='y', alpha=0.75)
+        # plt.xlabel('Avg = ' + '{:.3f}'.format(l_tension_filtered_mean))
+        # plt.ylabel('Frequency')
+        # plt.title("Filtered on " + str(self.FILTER) + " standard deviation")
+        # plt.text(23, 45, r'$\mu=15, b=3$')
+        # maxfreq_l = n2.max()
+        # # Set a clean upper y-axis limit.
+        # plt.ylim(ymax=np.ceil(maxfreq_l / 10) * 10 if maxfreq_l % 10 else maxfreq_l + 10)
+        # # insert a legend
+        # blue_patch = mpatches.Patch(color='#0504aa', label='excluded from the average')
+        # yellow_patch = mpatches.Patch(color='#ffff00', label='included in average')
+        # plt.legend(handles=[blue_patch, yellow_patch])
 
-        plt.show()
+        # plt.show()
 # %%
         return i_min_h, u_min_h, i_max_h, u_max_h
 
@@ -233,41 +233,57 @@ class Pidcmes:
         else:
             print("interrupt from channel:" + str(channel))
 
+    def verify_quality_new(self, n_passes, n_moyenne):
+
+        plt.close('all')
+        print("pidcmes_quality_new start n_passes=" + str(n_passes) + " n_moyenne=" + str(n_moyenne) + " (it may take a few seconds)")
+
+        v_stat_min = []
+        v_stat_max = []
+        v_stat_avg = []
+        v_stat_y = []
+
+        for i in range(n_passes):
+            u, i_min, u_min, i_max, u_max = self.get_tension(n_moyenne, show_histogram=True)
+            print("passe: " + '{:0>2d}'.format(i) + " -> UAVG:" + '{:.3f}'.format(u) + " / UMIN:" + '{:0>2d}'.format(
+                i_min)
+                  + "-" + '{:.3f}'.format(u_min) + " / UMAX:" + '{:0>2d}'.format(i_max) + "-" + '{:.3f}'.format(u_max))
+            v_stat_min.append(i_min)
+            v_stat_max.append(i_max)
+            v_stat_avg.append(u)
+
+        u_avg = sum(v_stat_avg) / len(v_stat_avg)
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+        fig.suptitle('Répartition des indices MIN et MAX \npour ' + str(n_passes) + " passes et moyenne sur " + str(n_moyenne) + " mesures")
+
+        ax1.set_title('MIN')
+        ax1.set_xlim(0, n_moyenne)
+        ax1.grid(axis='y', alpha=0.75)
+        ax1.hist(x=v_stat_min, bins=min(int(n_moyenne / 2), 50), color='#ffd500', alpha=0.7, rwidth=0.85)
+
+        ax2.set_title('MAX')
+        ax2.set_xlim(0, n_moyenne)
+        ax2.grid(axis='y', alpha=0.75)
+        ax2.hist(x=v_stat_max, bins=min(int(n_moyenne / 2), 50), color='#0504aa', alpha=0.7, rwidth=0.85)
+
+        plt.pause(2)
+
+        plt.hist(x=v_stat_avg, bins=min(int(n_moyenne / 2), 50), color='#aa1d04', alpha=0.7, rwidth=0.85)
+        plt.grid(axis='y', alpha=0.75)
+        plt.xlabel('U average = ' + '{:.3f}'.format(u_avg) + "V")
+        plt.title("Répartition des AVG de chaque measure \npour " + str(n_passes) + " passes et moyenne sur " + str(n_moyenne) + " mesures")
+
+        plt.pause(2)
 
 if __name__ == '__main__':
 
     # verify tension and filtering
     pidcmes = Pidcmes()
     print("pidcmes_lib start (it may take a few seconds)")
-    
-    v_stat_min = []
-    v_stat_max = []
-    n_passes = 500
+
+    n_passes = 20
     n_moyenne = 50
-    
-    for i in range(n_passes):
-        u, i_min, u_min, i_max, u_max = pidcmes.get_tension(n_moyenne, show_histogram=True)
-        print("passe: " + '{:0>2d}'.format(i) + " -> UAVG:" + '{:.3f}'.format(u) + " / UMIN:" + '{:0>2d}'.format(i_min)
-              + "-" + '{:.3f}'.format(u_min) + " / UMAX:" + '{:0>2d}'.format(i_max) + "-" + '{:.3f}'.format(u_max))
-        v_stat_min.append(i_min)
-        v_stat_max.append(i_max)
-
-# %%
-    # plot histogramm
-    # bins=min(int(n_passes/2), n_moyenne)
-    plt.hist(x=v_stat_min, bins=n_moyenne, color='#ffff00', alpha=0.7, rwidth=0.85)
-    # plt.grid(axis='y', alpha=0.75)
-
-    # n1, bins1, patches1 = plt.hist(x=v_stat_max, bins=min(int(n_passes/2), 50), color='#0504aa', alpha=0.7, rwidth=0.85)
-    plt.hist(x=v_stat_max, bins=n_moyenne, color='#0504aa', alpha=0.7, rwidth=0.85)
-    plt.grid(axis='y', alpha=0.75)
-
-    maxfreq = n_moyenne
-    # Set a clean upper y-axis limit.
-    plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
-    plt.ylabel('Frequency')
-    plt.title("Répartition des indices MIN-MAX de chaque measure")
-    # insert a legend
-    plt.pause(2)
+    pidcmes.verify_quality_new(n_passes, n_moyenne)
 
     GPIO.cleanup()
