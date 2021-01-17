@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*-
+# -*- coding: utf-8 -*-
 """
     class Pidcmes to
     - read analog tension on two digital pins
@@ -10,13 +10,11 @@ import time
 import RPi.GPIO as GPIO
 import math
 import numpy as np
-# import scipy.stats as stat
 import pdb
 import pandas as pd
 # import matplotlib
 # matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-# import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 import os
 import warnings
@@ -32,40 +30,33 @@ class Pidcmes:
     t_end_measure = 0.0  # value changed by interrupt_handling()
     interruption_occurred = False  # set to true by interrupt_handling()
 
-    def __init__(self, from_who=""):
-  
+    def __init__(self):
+
+        # initialisation GPIO
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
         GPIO.setup(self.pin_cmd, GPIO.OUT)  # initialize control pin                  
         GPIO.setup(self.pin_mes, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # initialize measure pi (attention no pull-up or pull-down)
-        # GPIO.add_event_detect(self.pin_mes, GPIO.FALLING, callback=self.interrupt_handling)
+        GPIO.output(self.pin_cmd, GPIO.LOW)
 
-        if from_who == "calibration":
-            GPIO.output(self.pin_cmd, GPIO.HIGH)
-        else:
-            GPIO.output(self.pin_cmd, GPIO.LOW)
-            # if not in calibration read the ini data file
-            with open("".join([self.app_dir, '/pidcmes.ini']), 'r') as ini_file:
-                data = ini_file.readlines()
-                params = data[0].split(",")
-                self.U_TRIGGER = float(params[0])  # the input trigger level (depend on the harware)
-                self.R1 = float(params[1])  # value of the resistor
-                self.C1 = float(params[2])  # value of the capacitor
+        # read the ini data file
+        with open("".join([self.app_dir, '/pidcmes.ini']), 'r') as ini_file:
+            data = ini_file.readlines()
+            params = data[0].split(",")
+            self.U_TRIGGER = float(params[0])  # the input trigger level (depend on the harware)
+            self.R1 = float(params[1])  # value of the resistor
+            self.C1 = float(params[2])  # value of the capacitor
 
-            # initialize program constants
-            self.PULSE_WIDTH = 10e-3  # pulse width to discharge the condensator and trig the measure
-            self.T_TIMEOUT = 10 * self.R1 * self.C1  # if no interruption after 10 tau -> no tension on the measure pin
-            self.FILTER = 1.5  # +/- filter on n standard deviation
-
-        # # initialize program variables
-        # # t_start_measure = 0.0  # initialized when starting a measure
-        # self.t_end_measure = 0.0  # value changed by interrupt_handling()
-        # self.interruption_occurred = False  # set to true by interrupt handling
+        # initialize program constants
+        self.PULSE_WIDTH = 10e-3  # pulse width to discharge the condensator and trig the measure
+        self.T_TIMEOUT = 10 * self.R1 * self.C1  # if no interruption after 10 tau -> no tension on the measure pin
+        self.FILTER = 1.5  # +/- filter on n standard deviation
 
     def get_tension(self, n_moyenne, show_histogram=False, return_min_max=False):
         
         j = 0
         l_elapsed = []
+        l_elaps_filtered = []
         n_dummy = 5
         # read the tension
         while j < n_moyenne + n_dummy:
@@ -98,7 +89,7 @@ class Pidcmes:
                     print("elapsed:" + str((self.t_end_measure - t_start_measure)))
                     pdb.set_trace()
 
-        GPIO.output(self.pin_cmd, GPIO.HIGH)  # décharger le condo
+        GPIO.output(self.pin_cmd, GPIO.LOW)  # décharger le condo
 
         # filter the data list on the standard deviation 
         l_elaps_df = pd.DataFrame(l_elapsed, columns=list('B'))
@@ -110,13 +101,13 @@ class Pidcmes:
         if show_histogram:
             self.calc_and_show_histogram(l_elapsed, n_moyenne)
         if return_min_max:
-            i_min_u, u_min_u, i_max_u, u_max_u = self.get_min_max(l_elapsed)
+            i_min_u, u_min_u, i_max_u, u_max_u = self.get_min_max(l_elaps_filtered.B)
             return u_average, i_min_u, u_min_u, i_max_u, u_max_u
         else:
             return u_average
 
     def get_min_max(self, l_elapsed):
-        # create ans show histogramm
+
         l_tension = []
         for t_elaps in l_elapsed:
             l_tension.append(self.U_TRIGGER / (1 - math.exp(- t_elaps / (self.R1 * self.C1))))
@@ -164,73 +155,11 @@ class Pidcmes:
         plt.show()
         return
 
-    def verify_quality_new(self, n_passes, n_moyenne):
-
-        plt.close('all')
-        print("pidcmes_quality_new start n_passes=" + str(n_passes) + " n_moyenne=" + str(n_moyenne) + " (it may take a few seconds)")
-
-        v_stat_min = []
-        v_stat_max = []
-        v_stat_avg = []
-        v_stat_x = []
-
-        for i in range(n_passes):
-            u, i_min, u_min, i_max, u_max = self.get_tension(n_moyenne, show_histogram=False, return_min_max=True)
-            print("passe: " + '{:0>2d}'.format(i) + " -> UAVG:" + '{:.3f}'.format(u) + " / UMIN:"
-                  + '{:0>2d}'.format(i_min) + "-" + '{:.3f}'.format(u_min) + " / UMAX:" + '{:0>2d}'.format(i_max)
-                  + "-" + '{:.3f}'.format(u_max))
-            v_stat_min.append(i_min)
-            v_stat_max.append(i_max)
-            v_stat_avg.append(u)
-            v_stat_x.append(i)
-
-        u_avg = sum(v_stat_avg) / len(v_stat_avg)
-
-        fig1, (ax10, ax11) = plt.subplots(1, 2, sharey=True)
-        fig1.suptitle('Répartition des indices MIN et MAX \npour ' + str(n_passes)
-                      + " passes et moyenne sur " + str(n_moyenne) + " mesures")
-
-        ax10.set_title('MIN')
-        ax10.set_xlim(0, n_moyenne)
-        ax10.grid(axis='y', alpha=0.75)
-        ax10.hist(x=v_stat_min, bins=min(int(n_moyenne / 2), 50), color='#ffd500', alpha=0.7, rwidth=0.85)
-
-        ax11.set_title('MAX')
-        ax11.set_xlim(0, n_moyenne)
-        ax11.grid(axis='y', alpha=0.75)
-        ax11.hist(x=v_stat_max, bins=min(int(n_moyenne / 2), 50), color='#0504aa', alpha=0.7, rwidth=0.85)
-
-        plt.pause(2)
-
-        fig2, (ax20, ax21) = plt.subplots(1, 2)
-        fig2.suptitle('Variation de la tension \npour ' + str(n_passes)
-                      + " passes et moyenne sur " + str(n_moyenne) + " mesures")
-
-        ax20.set_title("Gaussienne des AVG")
-        ax20.grid(axis='y', alpha=0.75)
-        ax20.hist(x=v_stat_avg, bins=min(int(n_moyenne / 2), 50), color='#aa1d04', alpha=0.7, rwidth=0.85)
-        ax20.set_xlabel('U average = ' + '{:.3f}'.format(u_avg) + "V")
-        ax20.set_ylabel("frequency")
-
-        ax21.set_title("U = f(mesure)")
-        ax21.grid(axis='y', alpha=0.75)
-        ax21.plot(v_stat_x, v_stat_avg, color='#041daa')
-        ax21.set_xlabel("Mesure no")
-        ax21.set_ylabel("Tension [V]")
-
-        plt.pause(2)
-
 
 if __name__ == '__main__':
 
-    # verify tension and filtering
+    # # verify tension and filtering
     pidcmes = Pidcmes()
-    print("pidcmes_lib start (it may take a few seconds)")
-
-    n_passes = 2500
     n_moyenne = 50
-    pidcmes.verify_quality_new(n_passes, n_moyenne)
-
-    # pidcmes.get_tension(n_moyenne, show_histogram=True, return_min_max=False)
-
+    pidcmes.get_tension(n_moyenne, show_histogram=True, return_min_max=False)
     GPIO.cleanup()
