@@ -25,11 +25,12 @@ if __name__ == '__main__':
     # parameters
     U_BAT_MIN = 3.7  # minumum battery voltage
     AVERAGING_ON = 20  # averaging to reduce glitches
+    N_DUMMY_MES = int(AVERAGING_ON/10)
 
     # internal variables
     stop_run = False  # to control the execution (run/stop)
 
-    u_avg = pidcmes.get_tension(AVERAGING_ON)  # read the value in volts
+    u_avg = pidcmes.get_tension(AVERAGING_ON, N_DUMMY_MES)  # read the value in volts
         
     if u_avg < U_BAT_MIN:  # or i > 10:
         print("proper shut down of the machine due to low battery")

@@ -52,12 +52,12 @@ class Pidcmes:
         self.T_TIMEOUT = 10 * self.R1 * self.C1  # if no interruption after 10 tau -> no tension on the measure pin
         self.FILTER = 1.5  # +/- filter on n standard deviation
 
-    def get_tension(self, n_moyenne, show_histogram=False, return_min_max=False):
+    def get_tension(self, n_moyenne, n_dummy, show_histogram=False, return_min_max=False):
         
         j = 0
         l_elapsed = []
         l_elaps_filtered = []
-        n_dummy = 5
+        # n_dummy = 0
         # read the tension
         while j < n_moyenne + n_dummy:
 
