@@ -25,7 +25,7 @@ class Pidcmes_qual:
         v_stat_avg = []
         v_stat_x = []
 
-        mesure_each = 0
+        mesure_each = 5
 
         for i in range(n_passe):
             sw_start = time.time()
@@ -111,12 +111,14 @@ if __name__ == '__main__':
         os.remove(os.path.join(graph_dir, f))
 
     for n_dummy in pidcmes_qual.for_next_step(0, 10, 2):
-        print("n_dummy:", n_dummy)
+        # print("n_dummy:", n_dummy)
         for n_moyenne in pidcmes_qual.for_next_step(5, 50, 5):
-            print("n_moyenne:", n_moyenne)
+            # print("n_moyenne:", n_moyenne)
             for n_passe in pidcmes_qual.for_next_step(10, 100, 10):
-                print("passe:", n_passe)
-                print("pidcmes_qual pass (n_passes=" + str(n_passe) + " n_moyenne=" + str(n_moyenne) + " n_dummy=" + str(n_dummy) + ")")
+                # print("passe:", n_passe)
+                prt_str = "pidcmes_qual pass (n_passes=" + str(n_passe) + " n_moyenne=" + str(n_moyenne) + " n_dummy=" + str(n_dummy) + ")"
+                print(prt_str)
+                print("="*len(prt_str))
                 pidcmes_qual.verify_quality(n_passe, n_moyenne, n_dummy)
 
     print("pidcmes_qual mesure terminée")
