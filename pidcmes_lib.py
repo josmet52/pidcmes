@@ -10,6 +10,7 @@ import time
 import RPi.GPIO as GPIO
 import math
 import numpy as np
+from statistics import stdev, mean
 import pdb
 import pandas as pd
 # import matplotlib
