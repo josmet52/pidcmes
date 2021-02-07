@@ -19,7 +19,7 @@ The command
     sudo crontab -e
 in the pi_user home directory opens the cron file and the command line would be, for example,
 for a trigger every 5 minutes:
-    5 * * * * /usr/bin/python3 /home/pi/dev_python/pidcmes/pidcmes_bbu.py 2>&1
+    */5 * * * * /usr/bin/python3 /home/pi/dev_python/pidcmes/pidcmes_bbu.py 2>&1
 
 """
 
@@ -38,17 +38,17 @@ if __name__ == '__main__':
     u_avg, err = pidcmes.get_tension(AVERAGING_ON)  # read the value in volts
 
     # check if errors
+    date_time = time.strftime("%d.%m.%Y %H:%M:%S", time.localtime())
     if err == 0: # no error
         if u_avg < U_BAT_MIN:  # or i > 10:
-            print("controlled PI shut down due to a low battery !")
+            print("".join([date_time, " -> controlled PI shut down due to a low battery !"]))
             time.sleep(5)
             print("now stop the PI")
             # to active the real shutdown uncomment the next line
             # call("sudo shutdown -h now", shell=True)  # shutdown the RASPI
         else:
-            print(time.strftime("%d %b %Y %H:%M:%S", time.localtime()))
-            print("all is calm sleep good people !")
-    elif err == 1: # no tesnion on the measure entry
-        print("No voltage detected on the measurement input")
+            print("".join([(date_time), " -> all is calm sleep good people!"]))
+    elif err == 1: # no voltage on the measure entry
+        print("".join([(date_time), " -> no voltage detected on the measurement input"]))
     elif err == 2: # n_moyenne < 2
-        print("The value of n_mean must be> = 2")
+        print("".join([(date_time), " -> The value of AVERAGING_ON must be> = 2"]))
