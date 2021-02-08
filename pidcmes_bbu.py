@@ -24,8 +24,13 @@ for a trigger every 5 minutes:
 """
 
 import time
+
 from subprocess import call
 from pidcmes_lib import Pidcmes  # class for 'pidcmes' procedures
+from ina219 import INA219
+from ina219 import DeviceRangeError
+
+
 
 if __name__ == '__main__':
         
@@ -34,9 +39,13 @@ if __name__ == '__main__':
     # parameters
     U_BAT_MIN = 3.7  # minumum battery voltage
     AVERAGING_ON = 10  # averaging to reduce glitches
+    SHUNT_OHMS = 0.05
+
+    ina = INA219(SHUNT_OHMS)
+    ina.configure()
 
     u_avg, err = pidcmes.get_tension(AVERAGING_ON)  # read the value in volts
-
+    u_bus = ina.voltage()
     # check if errors
     date_time = time.strftime("%d.%m.%Y %H:%M:%S", time.localtime())
     if err == 0: # no error
@@ -48,7 +57,17 @@ if __name__ == '__main__':
             # call("sudo shutdown -h now", shell=True)  # shutdown the RASPI
         else:
             print("".join([(date_time), " -> all is calm sleep good people!"]))
+            print("Battery volatage: %.3f V" % u_avg)
+            print("Bus Voltage: %.3f V" % ina.voltage())
+            print("Bus Current: %.3f mA" % ina.current())
+#             print("Power: %.3f mW" % ina.power())
+#             print("Shunt voltage: %.3f mV" % ina.shunt_voltage())
+            print()
+
     elif err == 1: # no voltage on the measure entry
         print("".join([(date_time), " -> no voltage detected on the measurement input"]))
     elif err == 2: # n_moyenne < 2
         print("".join([(date_time), " -> The value of AVERAGING_ON must be> = 2"]))
+
+
+
