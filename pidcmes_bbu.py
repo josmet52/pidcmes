@@ -24,31 +24,44 @@ for a trigger every 5 minutes:
 """
 
 import time
+
 from subprocess import call
 from pidcmes_lib import Pidcmes  # class for 'pidcmes' procedures
+from ina219 import INA219
+from ina219 import DeviceRangeError
 
 if __name__ == '__main__':
-        
+
     pidcmes = Pidcmes()  # initialize pidcmese class
 
     # parameters
-    U_BAT_MIN = 3.5  # minumum battery voltage
+    U_BAT_MIN = 3.7  # minumum battery voltage
     AVERAGING_ON = 10  # averaging to reduce glitches
+    SHUNT_OHMS = 0.05
 
-    u_avg, err_no, err_msg = pidcmes.get_tension(AVERAGING_ON)  # read the value in volts
+    ina = INA219(SHUNT_OHMS)
+    ina.configure()
 
+    u_avg, err = pidcmes.get_tension(AVERAGING_ON)  # read the value in volts
+    u_bus = ina.voltage()
     # check if errors
     date_time = time.strftime("%d.%m.%Y %H:%M:%S", time.localtime())
-    if err_no == 0: # no error
+    str_status = " / ".join([" -> bat:%.2f[V]" % u_avg, "bus:%.2f[V]" % ina.voltage(), "crt:%.1f[mA]" % ina.current()])
+    if err == 0:  # no error
         if u_avg < U_BAT_MIN:  # or i > 10:
-            print("".join([err_msg, " -> " + date_time, " Ubat: " , '{:.3f}'.format(u_avg), "V -> controlled PI shut down due to a low battery !"]))
+            print("".join([date_time, " -> controlled PI shut down due to a low battery !", str_status]))
             time.sleep(5)
             print("now stop the PI")
             # to active the real shutdown uncomment the next line
-            # call("sudo shutdown -h now", shell=True)  # shutdown the RASPI
+            call("sudo shutdown -h now", shell=True)  # shutdown the RASPI
         else:
-            print("".join([date_time, " Ubat: " , '{:.3f}'.format(u_avg), "V --> all is calm sleep good people!"]))
-    elif err_no == 1: # no voltage on the measure entry
-        print("".join([err_msg, " -> " + date_time, " -> no voltage detected on the measurement input"]))
-    elif err_no == 2: # n_moyenne < 2
-        print("".join([err_msg, " -> " + date_time, " -> The value of AVERAGING_ON must be> = 2"]))
+            print("".join([(date_time), " -> all is calm sleep good people!", str_status]))
+
+    elif err == 1:  # no voltage on the measure entry
+        print("".join([(date_time), " -> no voltage detected on the measurement input", str_status]))
+    elif err == 2:  # n_moyenne < 2
+        print("".join([(date_time), " -> The value of AVERAGING_ON must be> = 2", str_status]))
+
+
+
+
