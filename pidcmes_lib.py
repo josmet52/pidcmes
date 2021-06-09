@@ -24,15 +24,12 @@
 """
 
 import time
-import datetime
 import RPi.GPIO as GPIO
 import math
 import os
-# import pdb
 
 
 class Pidcmes:
-    # in_run = False
 
     def __init__(self):
         # initialize program constants
@@ -53,23 +50,20 @@ class Pidcmes:
         GPIO.setup(self.PIN_MES, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # initialize measure pi (attention no pull-up or pull-down)
         GPIO.output(self.PIN_CMD, GPIO.LOW)
 
-    def get_tension(self, n_for_mean):
+    def get_tension(self, n_mean):
 
-        # verifiy the value of n_for_mean
-        if n_for_mean < 2:  # n_for_mean must be greather than 1
-            err_no = 2
-            err_msg = "n_for_mean must be greather than 1"
-            return 0, err_no, err_msg
+        # verifiy the value of n_mean
+        if n_mean < 2:  # n_mean must be greather than 1
+            err = 2
+            e_msg = "n_mean must be greather than 1"
+            return 0, err, e_msg
 
         l_elapsed = []
-        err_no = 0
-        err_msg = "measure ok"
+        err = 0
+        e_msg = "measure ok"
 
         # read the tension
-        # while Pidcmes.in_run:
-        #     time.sleep(0.2)
-        # Pidcmes.in_run = True
-        for dummy in range(n_for_mean):
+        for dummy in range(n_mean):
 
             # trig the measure
             GPIO.output(self.PIN_CMD, GPIO.HIGH)  # discharge condensator
@@ -85,18 +79,17 @@ class Pidcmes:
                 l_elapsed.append(elapsed)
             else:  # timeout has occcured
                 # pdb.set_trace()
-                err_no = 1
-                err_msg = "timeout has occured"
-                return 0, err_no, err_msg
+                err = 1
+                e_msg = "timeout has occured"
+                return 0, err, e_msg
 
-        # Pidcmes.in_run = False
         # filter the data list on the standard deviation
 
         n = len(l_elapsed)  # number of measurements
         v_mean = sum(l_elapsed) / n  # mean value
         st_dev = math.sqrt(sum([(x - v_mean) ** 2 for x in l_elapsed]) / (n - 1))  # standard deviation
         if st_dev == 0:
-            return v_mean, 0, err_msg
+            return v_mean, 0, e_msg
 
         # filter on max stdev = FILTER value
         l_elaps_f = [el for el in l_elapsed if abs((el - v_mean) / st_dev) <= self.FILTER]
@@ -104,35 +97,20 @@ class Pidcmes:
 
         # calculate  the tension
         u_average = self.TRIG_LEVEL / (1 - math.exp(-l_elaps_f_mean / (self.R1 * self.C1)))
-        return u_average, err_no, err_msg
+        return u_average, err, e_msg
 
 
 if __name__ == '__main__':
 
     # verify tension and filtering
     pidcmes = Pidcmes()
-    n_for_mean = 10  # the greater this value, the longer the measurement takes
-    err_no = 0
-    u_min = 999
-    u_max = -999
-    i = 0
-    
-    while err_no == 0:
-        i += 1
-        current_time = datetime.datetime.now()
-        u, err_no, err_msg = pidcmes.get_tension(n_for_mean)
-        if u < u_min: u_min = u
-        if u > u_max: u_max = u
-        if err_no == 0:  # the measurement is ok
-            msg = " ".join([str(i), '- ', current_time.strftime("%b %d %Y %H:%M:%S"), '-> ',
-                            "u_min=", '{:.2f}'.format(u_min),
-                            "u_mes=", '{:.2f}'.format(u),
-                            "u_max=", '{:.2f}'.format(u_max),
-                            ])
-            print(msg)
-#             print(current_time.strftime("%b %d %Y %H:%M:%S"), err_msg + " -> " + "la tension sur l'entrée de mesure est de: " + '{:.2f}'.format(u) + " [V]")
-        elif err_no == 1:  # no tesnion on the measure entry
-            print(err_msg + " -> " + "Pas de tension détectée sur l'entrée de mesure")
-        elif err_no == 2:  # n_for_mean < 2
-            print(err_msg + " -> " + "la valeur de n_for_mean doit etre >= 2")
+    n_for_mean = 10
+    u, err_no, err_msg = pidcmes.get_tension(n_for_mean)
+    if err_no == 0:  # the measurement is ok
+        msg = "u_mes = " + '{:.2f} V'.format(u)
+        print(msg)
+    elif err_no == 1:  # no tension on the measure entry
+        print(err_msg + " -> " + "Pas de tension détectée sur l'entrée de mesure")
+    elif err_no == 2:  # n_for_mean < 2
+        print(err_msg + " -> " + "la valeur de n_for_mean doit etre >= 2")
     GPIO.cleanup()

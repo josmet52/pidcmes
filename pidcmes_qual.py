@@ -1,159 +1,171 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
-    class Pidcmes to
-    - read analog tension on two digital pins
-    - calibrate the sensor
-    - plot the measured data's
+    class Pidcmes
+    =============
+    Measure an analog voltage using two digital pins.
+    The measuring range starts just above the reference voltage and can go up to more than 10V.
+    The lower the voltage measured, the longer the measurement takes
+
+    Constants : PIN_CMD -> control pin
+                PIN_MES -> measure pin
+                TRIG_LEVEL -> comparator refenre voltage
+                R1 -> resistor of RC circuit for time measurement
+                C1 -> condensator of RC circuit for time measurement
+                PULSE_WIDTH -> duration of the condensator discharge pulse
+                T_TIMEOUT -> after this this the measure is stopedd because no tension on the measurement pins
+                FILTER -> standard deviation accepted for good measurement
+
+    Errors :  0 -> measurement is ok
+              1 -> no tension on the measure pin
+              2 -> n_for_mean < 2
+              3 -> not enought measure for st_dev
 """
+
 import time
-from datetime import datetime
-from statistics import stdev, mean
+import datetime
+import RPi.GPIO as GPIO
+import math
 import os
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import numpy as np
-from pidcmes_lib import Pidcmes
-import warnings
-warnings.filterwarnings("ignore")
 
 
-class PidcmesQual:
+class Pidcmes:
+    # in_run = False
 
-    @staticmethod
-    def verify_quality(n_passe, n_moyenne, n_dummy, graph_dir, mesure_each, n_essai):
+    def __init__(self):
+        # initialize program constants
+        self.PIN_CMD = 8  # control pin
+        self.PIN_MES = 10  # measure pin
+        self.TRIG_LEVEL = 2.5  # comparator reference voltage
+        self.R1 = 100e3  # resistor value 100 k
+        self.C1 = 1e-6  # condensator value 1 uF
+        self.PULSE_WIDTH = 10e-3  # pulse width to discharge the condensator and trig the measure
+        self.T_TIMEOUT = 10 * self.R1 * self.C1  # if no interruption after 10 R1*C1 time -> no tension on the measure pin
+        self.FILTER = 1.5  # +/- filter on n standard deviation to exclude bad measurement
+        self.app_dir = os.getcwd()
 
-        essai_min = []
-        essai_max = []
-        essai_avg = []
-        essai_no = []
+        # initialisation GPIO
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setwarnings(False)
+        GPIO.setup(self.PIN_CMD, GPIO.OUT)  # initialize control pin                  
+        GPIO.setup(self.PIN_MES, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # initialize measure pi (attention no pull-up or pull-down)
+        GPIO.output(self.PIN_CMD, GPIO.LOW)
 
-        for essai in range(n_essai):
+    def get_tension(self, n_mean):
 
-            txt = "\npidcmes qual -> essai: " + str(essai)
-            print(txt)
-            print("-"*len(txt))
+        # verifiy the value of n_mean
+        if n_mean < 2:  # n_mean must be greather than 1
+            err = 2
+            e_msg = "n_mean must be greather than 1"
+            return 0, err, e_msg
 
-            v_stat_min = []
-            v_stat_max = []
-            v_stat_avg = []
-            v_stat_x = []
+        l_elapsed = []
+        err = 0
+        e_msg = "measure ok"
 
-            for i in range(n_passe):
-                sw_start = time.time()
-                u, i_min, u_min, i_max, u_max = pidcmes.get_tension(n_moyenne, n_dummy=0,
-                                                show_histogram=False, return_min_max=True)
-                print("passe: " + '{:0>2d}'.format(i) + " -> UAVG:" + '{:.3f}'.format(u) + " / UMIN:"
-                      + '{:0>2d}'.format(i_min) + "-" + '{:.3f}'.format(u_min) + " / UMAX:"
-                      + '{:0>2d}'.format(i_max) + "-" + '{:.3f}'.format(u_max))
-                v_stat_min.append(i_min)
-                v_stat_max.append(i_max)
-                v_stat_avg.append(u)
-                v_stat_x.append(i)
+        # read the tension
+        for dummy in range(n_mean):
 
-                sw_sleep = max(0, mesure_each - int(time.time() - sw_start))
-                time.sleep(sw_sleep)
+            # trig the measure
+            GPIO.output(self.PIN_CMD, GPIO.HIGH)  # discharge condensator
+            time.sleep(self.PULSE_WIDTH)
+            GPIO.output(self.PIN_CMD, GPIO.LOW)  # start the measurement
 
-            # fig1, (ax10, ax20, ax21) = plt.subplots(3)
-            # fig1.set_size_inches(10, 12)
-            # plt.gcf().subplots_adjust(hspace=0.5)
-            #
-            # fig1.suptitle('Analyse de qualité pour pass:' + str(n_passe)
-            #               + " moy:" + str(n_moyenne) + " dummy: " + str(n_dummy))
-            #
-            # min_legend = mpatches.Patch(color='#aa0504', label="MIN")
-            # max_legend = mpatches.Patch(color='#0504aa', label="MAX")
-            # ax10.legend(handles=[min_legend, max_legend])
-            # ax10.set_title('Indice des mesures MIN et MAX dans la moyenne')
-            # ax10.set_xlabel("Indice de la mesure")
-            # ax10.grid(axis='y', alpha=0.75)
-            # ax10.set_xlim(0, n_moyenne - 1)
-            # ax10.hist(x=[v_stat_min, v_stat_max], color=['#aa0504', '#0504aa'], rwidth=0.85,
-            #           bins=min(n_moyenne - 1, 50))
-            #
-            # avg_legend_txt = "mean=" + '{:.3f}'.format(mean(v_stat_avg)) + "V +/- " + '{:.1f}'.format(
-            #     stdev(v_stat_avg) * 1000) + " mV"
-            # avg_legend = mpatches.Patch(color='#04aa05', label=avg_legend_txt)
-            # ax20.legend(handles=[avg_legend])
-            # ax20.set_ylabel("frequency")
-            # ax20.set_title("Histogramme de la tension moyenne de chaque passe")
-            # ax20.grid(axis='y', alpha=0.75)
-            # ax20.hist(x=v_stat_avg, color='#04aa05', alpha=0.7, rwidth=0.85)
-            # ax20.set_xlabel('Tension [V]')
-            #
-            # ax21.set_title("U=f(no passe)(filtered)")
-            # ax21.grid(axis='y', alpha=0.75)
-            # ax21.plot(v_stat_x, v_stat_avg, color='#041daa')
-            # ax21.set_ylabel("Tension [V]")
-            # ax21.set_xlabel("Passe no")
-            # ax21.set_xlim(0, n_passe - 1)
+            t_start_measure = time.time()  # start stopwatch
+            # wait for GPIO.FALLING on pin 'PIN_MES'
+            channel = GPIO.wait_for_edge(self.PIN_MES, GPIO.FALLING, timeout=int(self.T_TIMEOUT * 2000))
+            # GPIO.FALLING occurs
+            if channel is not None:  # measure is ok
+                elapsed = (time.time() - t_start_measure)
+                l_elapsed.append(elapsed)
+            else:  # timeout has occcured
+                # pdb.set_trace()
+                err = 1
+                e_msg = "timeout has occured"
+                return 0, err, e_msg
 
-            # plt.pause(2)
-            # graph_file_name = graph_dir + "/" \
-            #                   + "pidcmes qual -> essai: " + str(n_essai) \
-            #                   + "-" + str(n_passe) \
-            #                   + "-" + str(n_moyenne) \
-            #                   + "-" + str(n_dummy) \
-            #                   + ".png"
+        # Pidcmes.in_run = False
+        # filter the data list on the standard deviation
 
-            # fig1.savefig(graph_file_name)
+        n = len(l_elapsed)  # number of measurements
+        v_mean = sum(l_elapsed) / n  # mean value
+        st_dev = math.sqrt(sum([(x - v_mean) ** 2 for x in l_elapsed]) / (n - 1))  # standard deviation
+        if st_dev == 0:
+            return v_mean, 0, e_msg
 
-            essai_min.append(min(v_stat_avg))
-            essai_max.append(max(v_stat_avg))
-            essai_avg.append(sum(v_stat_avg)/len(v_stat_avg))
-            essai_no.append(essai)
+        # filter on max stdev = FILTER value
+        l_elaps_f = [el for el in l_elapsed if abs((el - v_mean) / st_dev) <= self.FILTER]
+        l_elaps_f_mean = sum(l_elaps_f) / len(l_elaps_f)  # mean of elaps filtered
 
-        plt.plot(essai_no, essai_min, label="MIN")
-        plt.plot(essai_no, essai_max, label="MAX")
-        plt.plot(essai_no, essai_avg, label="AVG")
-        plt.legend(loc='best')
-        plt.grid(True)
-        plt.xlabel("essai no")
-        plt.ylabel("tension [V]")
-        plt.title("pidcmes: passes=" + str(n_passe)
-                  + " moyenne=" + str(n_moyenne)
-                  + " dummy=" + str(n_dummy)
-                  + " interval=" + str(mesure_each))
-        plt.show()
-
-
-    @staticmethod
-    def for_next_step(start, end, step):
-        while start <= end:
-            yield start
-            start += step
+        # calculate  the tension
+        u_average = self.TRIG_LEVEL / (1 - math.exp(-l_elaps_f_mean / (self.R1 * self.C1)))
+        return u_average, err, e_msg
 
 
 if __name__ == '__main__':
 
     # verify tension and filtering
-    PidcmesQual = PidcmesQual()
     pidcmes = Pidcmes()
-
-    graph_dir = pidcmes.app_dir + "/graph_essai"
-    filelist = [f for f in os.listdir(graph_dir)]
-    for f in filelist:
-        os.remove(os.path.join(graph_dir, f))
-
-    mesure_each = 5 #10
-    n_essai = 100 #100
-    n_passe = 20 #25
-    n_moyenne = 5
-    n_dummy = 0
-    current_dt = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-    prt_str = "\nessai no: " + str(n_essai) + " -> " + current_dt + " -> PidcmesQual pass (n_passes=" + str(n_passe) \
-              + " n_moyenne=" + str(n_moyenne) + " n_dummy=" + str(n_dummy) + ")"
-    # print(prt_str)
-    # print("=" * (len(prt_str) - 1))
-    PidcmesQual.verify_quality(n_passe, n_moyenne, n_dummy, graph_dir, mesure_each, n_essai)
-
-    # for n_moyenne in PidcmesQual.for_next_step(5, 50, 5):
-    #     for n_dummy in PidcmesQual.for_next_step(0, 5, 1):
-    #         current_dt = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-    #         prt_str = "\n" + current_dt + " -> PidcmesQual pass (n_passes=" + str(n_passe) \
-    #                   + " n_moyenne=" + str(n_moyenne) + " n_dummy=" + str(n_dummy) + ")"
-    #         print(prt_str)
-    #         print("=" * (len(prt_str) - 1))
-    #         PidcmesQual.verify_quality(n_passe, n_moyenne, n_dummy, graph_dir, mesure_each)
-
-    print("PidcmesQual mesure terminée")
+    n_passes = 2500
+    n_for_mean = 10
+    pause_time = 10
+    
+    i = 0
+    data_umin = []
+    data_u = []
+    data_umax = []
+    data_no = []
+    
+    while i < n_passes:
+        
+        t = time.time()
+        u_min = 999
+        u_max = -999
+        current_time = datetime.datetime.now()
+        u, err_no, err_msg = pidcmes.get_tension(n_for_mean)
+        u = int(u * 1000) / 1000
+        
+        if u < u_min: u_min = u
+        if u > u_max: u_max = u
+        
+        if err_no == 0:  # the measurement is ok
+            
+            data_umin.append(u_min)
+            data_u.append(u)
+            data_umax.append(u_max)
+            data_no.append(i)
+            
+            msg = " ".join([str(i), '- ', current_time.strftime("%b %d %Y %H:%M:%S"), '-> ',
+                            "u_min=", '{:.2f}'.format(u_min),
+                            "u_mes=", '{:.2f}'.format(u),
+                            "u_max=", '{:.2f}'.format(u_max),
+                            ])
+            print(msg)
+            i += 1
+        elif err_no == 1:  # no tension on the measure entry
+            print(err_msg + " -> " + "Pas de tension détectée sur l'entrée de mesure")
+        elif err_no == 2:  # n_for_mean < 2
+            print(err_msg + " -> " + "la valeur de n_for_mean doit etre >= 2")
+        elapsed = time.time() - t
+        time.sleep(pause_time - elapsed)
+            
+    plt.plot(data_no, data_umin, label="MIN")
+    plt.plot(data_no, data_u, label="VAL")
+    plt.plot(data_no, data_umax, label="AVG")
+    plt.legend(loc='best')
+    plt.grid(True)
+    plt.xlabel("essai no")
+    plt.ylabel("tension [V]")
+#         plt.title("pidcmes: passes=" + str(n_passe)
+#                   + " moyenne=" + str(n_moyenne)
+#                   + " dummy=" + str(n_dummy)
+#                   + " interval=" + str(mesure_each))
+    plt.title("pidcmes")
+    plt.show()
+    
+#     print(data_umin)
+#     print(data_u)
+#     print(data_umax)
+    GPIO.cleanup()
