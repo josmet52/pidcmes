@@ -108,7 +108,7 @@ if __name__ == '__main__':
 
     # verify tension and filtering
     pidcmes = Pidcmes()
-    n_passes = 2500
+    n_passes = 360
     n_for_mean = 10
     pause_time = 10
     
@@ -153,7 +153,7 @@ if __name__ == '__main__':
             
     plt.plot(data_no, data_umin, label="MIN")
     plt.plot(data_no, data_u, label="VAL")
-    plt.plot(data_no, data_umax, label="AVG")
+    plt.plot(data_no, data_umax, label="MAX")
     plt.legend(loc='best')
     plt.grid(True)
     plt.xlabel("essai no")
@@ -162,7 +162,7 @@ if __name__ == '__main__':
 #                   + " moyenne=" + str(n_moyenne)
 #                   + " dummy=" + str(n_dummy)
 #                   + " interval=" + str(mesure_each))
-    plt.title("pidcmes")
+    plt.title("pidcmes mesure de la stabilité")
     plt.show()
     
 #     print(data_umin)
